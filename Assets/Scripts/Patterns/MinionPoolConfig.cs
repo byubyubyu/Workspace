@@ -1,20 +1,20 @@
 using System;
 using UnityEngine;
-using UnityEngine.Pool;
 
-[CreateAssetMenu(fileName = "MinionPoolConfig",
-    menuName = "Pool/MinionPoolConfig")]
-public class MinionPoolConfig : ScriptableObject
+namespace Workspace.Patterns
 {
-    [Serializable]
-    public class PoolEntry
+    [CreateAssetMenu(fileName = "MinionPoolConfig", menuName = "Pool/MinionPoolConfig")]
+    public class MinionPoolConfig : ScriptableObject
     {
-        public GameObject prefab;
-        public int initialSize = 10;
-        public int maxSize = 100;
+        [Serializable]
+        public class PoolEntry
+        {
+            public GameObject prefab;
+            public int initialSize = 10;
+            public int maxSize = 100;
+        }
+
+        [SerializeField] private PoolEntry[] entries;
+        public PoolEntry[] Entries => entries;
     }
-
-    [SerializeField] private PoolEntry[] entries;
-
-    public PoolEntry[] Entries => entries;
 }

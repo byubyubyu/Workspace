@@ -1,18 +1,22 @@
 using System;
 using UnityEngine;
+using Workspace.Enums;
 
-public class TeamMember : MonoBehaviour
+namespace Workspace.Core
 {
-    [SerializeField] private Team team = Team.None;
-
-    public Team Team => team;
-
-    public event Action<Team> OnTeamChanged;
-
-    public void SetTeam(Team newTeam)
+    public class TeamMember : MonoBehaviour
     {
-        if (team == newTeam) return;
-        team = newTeam;
-        OnTeamChanged?.Invoke(team);
+        [SerializeField] private Team team = Team.None;
+
+        public Team Team => team;
+
+        public event Action<Team> OnTeamChanged;
+
+        public void SetTeam(Team newTeam)
+        {
+            if (team == newTeam) return;
+            team = newTeam;
+            OnTeamChanged?.Invoke(team);
+        }
     }
 }

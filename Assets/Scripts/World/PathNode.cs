@@ -1,28 +1,28 @@
 using UnityEngine;
 
-public class PathNode : MonoBehaviour
+namespace Workspace.World
 {
-    [SerializeField] private BaseNode nodeA;
-    [SerializeField] private BaseNode nodeB;
-    [SerializeField] private Transform[] waypoints;
-
-    public BaseNode NodeA => nodeA;
-    public BaseNode NodeB => nodeB;
-
-    /// <summary>
-    /// fromに近い方を先頭にしてWaypointを返す
-    /// </summary>
-    public Transform[] GetWaypoints(BaseNode from)
+    public class PathNode : MonoBehaviour
     {
-        if (waypoints == null || waypoints.Length == 0) return null;
+        [SerializeField] private BaseNode nodeA;
+        [SerializeField] private BaseNode nodeB;
+        [SerializeField] private Transform[] waypoints;
 
-        if (from == nodeA)
-            return waypoints;
+        public BaseNode NodeA => nodeA;
+        public BaseNode NodeB => nodeB;
 
-        Transform[] reversed = new Transform[waypoints.Length];
-        for (int i = 0; i < waypoints.Length; i++)
-            reversed[i] = waypoints[waypoints.Length - 1 - i];
+        public Transform[] GetWaypoints(BaseNode from)
+        {
+            if (waypoints == null || waypoints.Length == 0) return null;
 
-        return reversed;
+            if (from == nodeA)
+                return waypoints;
+
+            Transform[] reversed = new Transform[waypoints.Length];
+            for (int i = 0; i < waypoints.Length; i++)
+                reversed[i] = waypoints[waypoints.Length - 1 - i];
+
+            return reversed;
+        }
     }
 }

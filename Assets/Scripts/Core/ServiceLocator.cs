@@ -1,37 +1,40 @@
 using System;
 using System.Collections.Generic;
 
-public static class ServiceLocator
+namespace Workspace.Core
 {
-    private static Dictionary<Type, object> services
-        = new Dictionary<Type, object>();
-
-    public static void Register<T>(T service)
+    public static class ServiceLocator
     {
-        services[typeof(T)] = service;
-    }
+        private static Dictionary<Type, object> services
+            = new Dictionary<Type, object>();
 
-    public static void Unregister<T>()
-    {
-        services.Remove(typeof(T));
-    }
-
-    public static T Get<T>()
-    {
-        if (services.TryGetValue(typeof(T), out object service))
-            return (T)service;
-
-        throw new Exception($"ServiceLocator: {typeof(T)}が登録されていません");
-    }
-
-    public static bool TryGet<T>(out T service)
-    {
-        if (services.TryGetValue(typeof(T), out object obj))
+        public static void Register<T>(T service)
         {
-            service = (T)obj;
-            return true;
+            services[typeof(T)] = service;
         }
-        service = default;
-        return false;
+
+        public static void Unregister<T>()
+        {
+            services.Remove(typeof(T));
+        }
+
+        public static T Get<T>()
+        {
+            if (services.TryGetValue(typeof(T), out object service))
+                return (T)service;
+
+            throw new Exception($"ServiceLocator: {typeof(T)}が登録されていません");
+        }
+
+        public static bool TryGet<T>(out T service)
+        {
+            if (services.TryGetValue(typeof(T), out object obj))
+            {
+                service = (T)obj;
+                return true;
+            }
+            service = default;
+            return false;
+        }
     }
 }

@@ -1,4 +1,9 @@
-public interface IStats
+using Workspace.Enums;
+
+namespace Workspace.Interfaces
 {
-    float GetStat(StatType type);
+    public interface IStats
+    {
+        float GetStat(StatType type);
+    }
 }

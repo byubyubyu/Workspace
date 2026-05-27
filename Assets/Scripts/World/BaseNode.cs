@@ -1,20 +1,23 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class BaseNode : MonoBehaviour
+namespace Workspace.World
 {
-    [SerializeField] private List<PathNode> adjacentPaths = new List<PathNode>();
-
-    public IReadOnlyList<PathNode> AdjacentPaths => adjacentPaths;
-
-    public void AddPath(PathNode path)
+    public class BaseNode : MonoBehaviour
     {
-        if (!adjacentPaths.Contains(path))
-            adjacentPaths.Add(path);
-    }
+        [SerializeField] private List<PathNode> adjacentPaths = new List<PathNode>();
 
-    public void RemovePath(PathNode path)
-    {
-        adjacentPaths.Remove(path);
+        public IReadOnlyList<PathNode> AdjacentPaths => adjacentPaths;
+
+        public void AddPath(PathNode path)
+        {
+            if (!adjacentPaths.Contains(path))
+                adjacentPaths.Add(path);
+        }
+
+        public void RemovePath(PathNode path)
+        {
+            adjacentPaths.Remove(path);
+        }
     }
 }

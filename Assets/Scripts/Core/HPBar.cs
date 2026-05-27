@@ -1,39 +1,43 @@
 using UnityEngine;
 using UnityEngine.UI;
+using Workspace.Patterns;
 
-public class HPBar : MonoBehaviour
+namespace Workspace.Core
 {
-    [SerializeField] private FloatEventChannel onHPChanged;
-    [SerializeField] private Image fillImage;
-
-    private float maxHP;
-
-    public void SetMaxHP(float max)
+    public class HPBar : MonoBehaviour
     {
-        maxHP = max;
-    }
+        [SerializeField] private FloatEventChannel onHPChanged;
+        [SerializeField] private Image fillImage;
 
-    void OnEnable()
-    {
-        if (onHPChanged != null)
-            onHPChanged.AddListener(UpdateBar);
-    }
+        private float maxHP;
 
-    void OnDisable()
-    {
-        if (onHPChanged != null)
-            onHPChanged.RemoveListener(UpdateBar);
-    }
+        public void SetMaxHP(float max)
+        {
+            maxHP = max;
+        }
 
-    private void UpdateBar(float currentHP)
-    {
-        if (fillImage == null) return;
-        fillImage.fillAmount = Mathf.Clamp01(currentHP / maxHP);
-    }
+        void OnEnable()
+        {
+            if (onHPChanged != null)
+                onHPChanged.AddListener(UpdateBar);
+        }
 
-    public void SetColor(Color color)
-    {
-        if (fillImage == null) return;
-        fillImage.color = color;
+        void OnDisable()
+        {
+            if (onHPChanged != null)
+                onHPChanged.RemoveListener(UpdateBar);
+        }
+
+        private void UpdateBar(float currentHP)
+        {
+            if (fillImage == null) return;
+            fillImage.fillAmount = Mathf.Clamp01(currentHP / maxHP);
+        }
+
+        public void SetColor(Color color)
+        {
+            if (fillImage == null) return;
+            fillImage.color = color;
+        }
     }
 }

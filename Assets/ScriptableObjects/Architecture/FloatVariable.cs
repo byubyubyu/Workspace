@@ -1,4 +1,7 @@
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "FloatVariable", menuName = "Architecture/Variable/Float")]
-public class FloatVariable : Variable<float> { }
+namespace Workspace.Patterns
+{
+    [CreateAssetMenu(fileName = "FloatVariable", menuName = "Architecture/Variable/Float")]
+    public class FloatVariable : Variable<float> { }
+}

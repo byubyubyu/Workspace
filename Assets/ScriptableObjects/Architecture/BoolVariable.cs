@@ -1,4 +1,7 @@
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "BoolVariable", menuName = "Architecture/Variable/Bool")]
-public class BoolVariable : Variable<bool> { }
+namespace Workspace.Patterns
+{
+    [CreateAssetMenu(fileName = "BoolVariable", menuName = "Architecture/Variable/Bool")]
+    public class BoolVariable : Variable<bool> { }
+}

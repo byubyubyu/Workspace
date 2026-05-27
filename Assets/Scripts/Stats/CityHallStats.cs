@@ -1,19 +1,24 @@
 using UnityEngine;
+using Workspace.Enums;
+using Workspace.Interfaces;
 
-[CreateAssetMenu(fileName = "CityHallStats", menuName = "Stats/CityHallStats")]
-public class CityHallStats : ScriptableObject, IStats
+namespace Workspace.Stats
 {
-    [SerializeField] private float maxHP = 500f;
-    [SerializeField] private float buildRequired = 100f;
-
-    public float BuildRequired => buildRequired;
-
-    public float GetStat(StatType type)
+    [CreateAssetMenu(fileName = "CityHallStats", menuName = "Stats/CityHallStats")]
+    public class CityHallStats : ScriptableObject, IStats
     {
-        switch (type)
+        [SerializeField] private float maxHP = 500f;
+        [SerializeField] private float buildRequired = 100f;
+
+        public float BuildRequired => buildRequired;
+
+        public float GetStat(StatType type)
         {
-            case StatType.HP: return maxHP;
-            default: return 0f;
+            switch (type)
+            {
+                case StatType.HP: return maxHP;
+                default: return 0f;
+            }
         }
     }
 }

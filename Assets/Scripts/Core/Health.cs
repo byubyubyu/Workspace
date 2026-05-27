@@ -1,61 +1,57 @@
 using UnityEngine;
+using Workspace.Enums;
+using Workspace.Patterns;
 
-public class Health : MonoBehaviour
+namespace Workspace.Core
 {
-    [SerializeField] private FloatEventChannel onHPChanged;
-    [SerializeField] private EventChannel onDamaged;
-    [SerializeField] private EventChannel onHealed;
-    [SerializeField] private EventChannel onDeath;
-
-    private float maxHP;
-    private float currentHP;
-    private StatCalculator calculator;
-
-    public float MaxHP => maxHP;
-    public float CurrentHP => currentHP;
-
-    void Start()
+    public class Health : MonoBehaviour
     {
-        calculator = GetComponent<StatCalculator>();
+        [SerializeField] private FloatEventChannel onHPChanged;
+        [SerializeField] private EventChannel onDamaged;
+        [SerializeField] private EventChannel onHealed;
+        [SerializeField] private EventChannel onDeath;
 
-        if (calculator != null)
-            maxHP = calculator.GetStat(StatType.HP);
+        private float maxHP;
+        private float currentHP;
+        private StatCalculator calculator;
 
-        currentHP = maxHP;
-        onHPChanged?.Raise(currentHP);
-    }
+        public float MaxHP => maxHP;
+        public float CurrentHP => currentHP;
 
-    public void TakeDamage(float damage)
-    {
-        currentHP -= damage;
-        currentHP = Mathf.Max(currentHP, 0f);
-        onHPChanged?.Raise(currentHP);
-        onDamaged?.Raise();
+        void Start()
+        {
+            calculator = GetComponent<StatCalculator>();
 
-        if (currentHP <= 0f)
-            Die();
-    }
+            if (calculator != null)
+                maxHP = calculator.GetStat(StatType.HP);
 
-    public void Heal(float amount)
-    {
-        currentHP += amount;
-        currentHP = Mathf.Min(currentHP, maxHP);
-        onHPChanged?.Raise(currentHP);
-        onHealed?.Raise();
-    }
+            currentHP = maxHP;
+            onHPChanged?.Raise(currentHP);
+        }
 
-    private void Die()
-    {
-        onDeath?.Raise();
-        Destroy(gameObject);
-    }
-    public void AddDeathListener(System.Action listener)
-    {
-        onDeath?.AddListener(listener);
-    }
+        public void TakeDamage(float damage)
+        {
+            currentHP -= damage;
+            currentHP = Mathf.Max(currentHP, 0f);
+            onHPChanged?.Raise(currentHP);
+            onDamaged?.Raise();
 
-    public void RemoveDeathListener(System.Action listener)
-    {
-        onDeath?.RemoveListener(listener);
+            if (currentHP <= 0f)
+                Die();
+        }
+
+        public void Heal(float amount)
+        {
+            currentHP += amount;
+            currentHP = Mathf.Min(currentHP, maxHP);
+            onHPChanged?.Raise(currentHP);
+            onHealed?.Raise();
+        }
+
+        private void Die()
+        {
+            onDeath?.Raise();
+            Destroy(gameObject);
+        }
     }
 }

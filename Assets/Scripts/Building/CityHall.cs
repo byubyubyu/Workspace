@@ -1,40 +1,46 @@
 using UnityEngine;
+using Workspace.Core;
+using Workspace.Enums;
+using Workspace.Patterns;
 
-public class CityHall : MonoBehaviour
+namespace Workspace.Building
 {
-    [SerializeField] private EventChannel onDeathChannel;
-    [SerializeField] private EventChannel onCityHallDestroyed;
-    [SerializeField] private TeamEventChannel onTeamChanged;
-
-    private TeamMember teamMember;
-
-    void Start()
+    public class CityHall : MonoBehaviour
     {
-        teamMember = GetComponent<TeamMember>();
+        [SerializeField] private EventChannel onDeathChannel;
+        [SerializeField] private EventChannel onCityHallDestroyed;
+        [SerializeField] private TeamEventChannel onTeamChanged;
 
-        if (teamMember != null)
-            teamMember.OnTeamChanged += OnTeamChanged;
+        private TeamMember teamMember;
 
-        if (onDeathChannel != null)
-            onDeathChannel.AddListener(OnDeath);
-    }
+        void Start()
+        {
+            teamMember = GetComponent<Core.TeamMember>();
 
-    private void OnTeamChanged(Team newTeam)
-    {
-        onTeamChanged?.Raise(newTeam);
-    }
+            if (teamMember != null)
+                teamMember.OnTeamChanged += OnTeamChanged;
 
-    private void OnDeath()
-    {
-        onCityHallDestroyed?.Raise();
-    }
+            if (onDeathChannel != null)
+                onDeathChannel.AddListener(OnDeath);
+        }
 
-    void OnDestroy()
-    {
-        if (teamMember != null)
-            teamMember.OnTeamChanged -= OnTeamChanged;
+        private void OnTeamChanged(Team newTeam)
+        {
+            onTeamChanged?.Raise(newTeam);
+        }
 
-        if (onDeathChannel != null)
-            onDeathChannel.RemoveListener(OnDeath);
+        private void OnDeath()
+        {
+            onCityHallDestroyed?.Raise();
+        }
+
+        void OnDestroy()
+        {
+            if (teamMember != null)
+                teamMember.OnTeamChanged -= OnTeamChanged;
+
+            if (onDeathChannel != null)
+                onDeathChannel.RemoveListener(OnDeath);
+        }
     }
 }

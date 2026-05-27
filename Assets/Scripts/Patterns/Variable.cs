@@ -1,26 +1,29 @@
 using System;
 using UnityEngine;
 
-public abstract class Variable<T> : ScriptableObject
+namespace Workspace.Patterns
 {
-    [SerializeField] private T initialValue;
-    private T runtimeValue;
-
-    public event Action<T> OnValueChanged;
-
-    public T Value
+    public abstract class Variable<T> : ScriptableObject
     {
-        get => runtimeValue;
-        set
+        [SerializeField] private T initialValue;
+        private T runtimeValue;
+
+        public event Action<T> OnValueChanged;
+
+        public T Value
         {
-            if (Equals(runtimeValue, value)) return;
-            runtimeValue = value;
-            OnValueChanged?.Invoke(runtimeValue);
+            get => runtimeValue;
+            set
+            {
+                if (Equals(runtimeValue, value)) return;
+                runtimeValue = value;
+                OnValueChanged?.Invoke(runtimeValue);
+            }
         }
-    }
 
-    private void OnEnable()
-    {
-        runtimeValue = initialValue;
+        private void OnEnable()
+        {
+            runtimeValue = initialValue;
+        }
     }
 }
