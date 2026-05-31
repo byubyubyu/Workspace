@@ -1,17 +1,16 @@
-using System.Collections.Generic;
+// 保存先: Assets/Scripts/Base/GameManager.cs
 using UnityEngine;
 
 public class GameManager : MonoBehaviour
 {
     [SerializeField] private World world;
-    [SerializeField] private List<CityhallBehavior> initialCityhalls;
 
     private void Start()
     {
         InitializeBases();
-        InitializePaths();
-        InitializeNeighborSubscriptions();
-        InitializeInitialCityhalls();
+        PlaceInitialBuildings();   // 先にCityhallを生成してTeamを確定させる
+        InitializeNeighborTeams(); // その後で隣接Teamを読む（空振り防止）
+        SubscribeNeighborChanges();
         StartGameLoop();
     }
 
@@ -23,20 +22,28 @@ public class GameManager : MonoBehaviour
             buildingManager.Initialize(b.GridSize);
             b.GetComponent<BaseAI>().Initialize(
                 buildingManager,
-                b.GetComponent<MinionManager>()
+                b.GetComponent<MinionManager>(),
+                b.GetComponent<BuildingFactory>(),
+                b.GetComponent<MinionFactory>()
             );
         }
     }
 
-    private void InitializePaths()
+    private void PlaceInitialBuildings()
     {
-        foreach (var path in world.Paths)
-        {
-            path.Initialize(path.ConnectedBases, path.Waypoints);
-        }
+        foreach (var b in world.Bases)
+            b.GetComponent<BaseAI>().PlaceInitialBuildings();
     }
 
-    private void InitializeNeighborSubscriptions()
+    // 起動時に隣接Teamを直接読む（イベント任せにしない）
+    private void InitializeNeighborTeams()
+    {
+        foreach (var b in world.Bases)
+            b.GetComponent<BaseAI>().InitializeNeighborTeams();
+    }
+
+    // 以降のTeam変化(占拠など)はイベントで更新する。Cityhall生成後なので購読も張れる。
+    private void SubscribeNeighborChanges()
     {
         foreach (var b in world.Bases)
         {
@@ -54,17 +61,9 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    private void InitializeInitialCityhalls()
-    {
-        foreach (var cityhall in initialCityhalls)
-        {
-            var baseAI = cityhall.GetComponentInParent<BaseAI>();
-            cityhall.Initialize(baseAI.Team);
-        }
-    }
-
     private void StartGameLoop()
     {
-        // ゲームループ開始
+        foreach (var b in world.Bases)
+            b.GetComponent<BaseAI>().StartDecision();
     }
 }

@@ -1,17 +1,14 @@
-using System;
+// 保存先: Assets/Scripts/Minion/Vision.cs
+using System.Collections.Generic;
 using UnityEngine;
 
 public class Vision : MonoBehaviour
 {
     private float visionRange;
     private Team team;
-    private IBattleInfo detectedEnemy;
-    private Construction detectedBuildTarget;
 
-    public event Action<IBattleInfo> OnEnemyDetected;
-    public event Action OnEnemyLost;
-    public event Action<Construction> OnBuildTargetDetected;
-    public event Action OnBuildTargetLost;
+    private List<TargetCandidate> attackCandidates = new List<TargetCandidate>();
+    private Construction buildTarget;
 
     public void Initialize(IMinionData data, Team team)
     {
@@ -21,39 +18,44 @@ public class Vision : MonoBehaviour
 
     private void Update()
     {
+        attackCandidates.Clear();
+        buildTarget = null;
+
         Collider[] hits = Physics.OverlapSphere(transform.position, visionRange);
-
-        IBattleInfo newEnemy = null;
-        Construction newBuildTarget = null;
-
         foreach (var hit in hits)
         {
+            if (hit == null) continue;
+
             if (hit.CompareTag("Minion"))
             {
                 var minion = hit.GetComponent<MinionCore>();
-                if (minion != null && minion.Team != team)
-                    newEnemy = minion;
+                // 破壊済み(偽null)・死亡済み(IsDead)は候補に入れない
+                if (minion == null) continue;
+                if (minion.IsDead) continue;
+                if (minion.Team != team)
+                    attackCandidates.Add(new TargetCandidate(minion, TargetCategory.Minion));
             }
             else if (hit.CompareTag("Building"))
             {
-                var construction = hit.GetComponent<Construction>();
-                if (construction != null && !construction.IsCompleted)
-                    newBuildTarget = construction;
+                var core = hit.GetComponent<BuildingCore>();
+                if (core == null) continue; // 破壊済み(偽null)は弾く
+
+                if (core.Team != team)
+                {
+                    attackCandidates.Add(new TargetCandidate(core, TargetCategory.Building));
+                }
+                else
+                {
+                    var construction = hit.GetComponent<Construction>();
+                    if (construction != null && !construction.IsCompleted)
+                        buildTarget = construction;
+                }
             }
         }
-
-        if (newEnemy != detectedEnemy)
-        {
-            detectedEnemy = newEnemy;
-            if (detectedEnemy != null) OnEnemyDetected?.Invoke(detectedEnemy);
-            else OnEnemyLost?.Invoke();
-        }
-
-        if (newBuildTarget != detectedBuildTarget)
-        {
-            detectedBuildTarget = newBuildTarget;
-            if (detectedBuildTarget != null) OnBuildTargetDetected?.Invoke(detectedBuildTarget);
-            else OnBuildTargetLost?.Invoke();
-        }
     }
+
+    public bool HasEnemy() => attackCandidates.Count > 0;
+    public List<TargetCandidate> GetAttackCandidates() => attackCandidates;
+    public bool HasBuildTarget() => buildTarget != null;
+    public Construction GetBuildTarget() => buildTarget;
 }

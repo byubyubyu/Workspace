@@ -1,3 +1,4 @@
+// 保存先: Assets/Scripts/Building/CityhallBehavior.cs
 using System;
 using UnityEngine;
 
@@ -11,9 +12,12 @@ public class CityhallBehavior : MonoBehaviour
     public event Action OnCityhallDestroyed;
     public event Action<Team> OnTeamChanged;
 
-    public void Initialize(Team team)
+    // startCost: 開始時の現在コスト。max / recovery は CityhallData（共通）、startCost は土地ごと。
+    public void Initialize(Team team, float costMax, float costRecovery, float startCost)
     {
         costPool = GetComponent<CostPool>();
+        costPool.Initialize(costMax, costRecovery, startCost);
+
         var buildingCore = GetComponent<BuildingCore>();
         buildingCore.OnDestroyed += () =>
         {

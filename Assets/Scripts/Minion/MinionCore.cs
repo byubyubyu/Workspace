@@ -1,3 +1,4 @@
+// 保存先: Assets/Scripts/Minion/MinionCore.cs
 using System;
 using UnityEngine;
 
@@ -7,6 +8,8 @@ public class MinionCore : MonoBehaviour, IBattleInfo
     private StateMachine stateMachine;
     private IState[] states;
     public Team Team { get; private set; }
+    public bool IsDead => currentHp <= 0;
+    public Vector3 Position => transform.position; // IBattleInfo
 
     public event Action OnDestroyed;
     public event Action OnArrived;
@@ -15,25 +18,27 @@ public class MinionCore : MonoBehaviour, IBattleInfo
     {
         currentHp = data.Stat.hp;
         Team = team;
-        stateMachine = new StateMachine();
+
+        // B-2: データ由来の初期設定をまとめて流し込む
+        GetComponent<Movement>()?.Initialize(data, this);
+        GetComponent<Vision>()?.Initialize(data, team);
+        GetComponent<Attack>()?.Initialize(data);
+
         states = GetComponents<IState>();
-
+        stateMachine = new StateMachine(states);
         foreach (var state in states)
-        {
             state.Initialize(stateMachine);
-        }
-
-        stateMachine.ChangeState(GetComponent<MovingState>());
     }
 
     public void TakeDamage(BattleInfo info)
     {
         currentHp -= info.attackPower;
-        if (currentHp <= 0)
-        {
-            stateMachine.ChangeState(GetComponent<DeadState>());
-            OnDestroyed?.Invoke();
-        }
+    }
+
+    public void Die()
+    {
+        OnDestroyed?.Invoke();
+        Destroy(gameObject);
     }
 
     public void NotifyArrived()
@@ -43,6 +48,6 @@ public class MinionCore : MonoBehaviour, IBattleInfo
 
     private void Update()
     {
-        stateMachine.Update();
+        stateMachine?.Update();
     }
 }

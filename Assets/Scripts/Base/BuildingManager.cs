@@ -1,3 +1,4 @@
+// 保存先: Assets/Scripts/Base/BuildingManager.cs
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -63,5 +64,17 @@ public class BuildingManager : MonoBehaviour
             if (cityhall != null) return cityhall;
         }
         return null;
+    }
+
+    // 追加: 指定種別の建物が今いくつ建っているかを返す（建設上限 maxCountBase の判定に使う）。
+    // BuildingCore.Type を問い合わせるだけ。建物の内部構成には依存しない（疎結合）。
+    public int CountByType(BuildingType type)
+    {
+        int count = 0;
+        foreach (var building in buildings.Values)
+        {
+            if (building.Type == type) count++;
+        }
+        return count;
     }
 }
