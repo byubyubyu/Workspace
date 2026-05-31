@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 298f870e01a707e498125b4c671ea190, type: 3}
   m_Name: BuildingStat_Cityhall
   m_EditorClassIdentifier: Assembly-CSharp::BuildingStatData
-  hp: 0
-  needBuildPoint: 0
-  maxCountBase: 0
+  hp: 200
+  needBuildPoint: 50
+  maxCountBase: 1
   buildCost: 0

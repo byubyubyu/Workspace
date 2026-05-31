@@ -12,5 +12,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 27be73d8d81c1254fbe8e6a00accf5ea, type: 3}
   m_Name: Priority_Barrack
   m_EditorClassIdentifier: Assembly-CSharp::BuildingPriorityData
-  buildingData: {fileID: 0}
-  basePriority: 0
+  buildingData: {fileID: 11400000, guid: 1f152fa05fd210348a5e5e42489b7251, type: 2}
+  basePriority: 10

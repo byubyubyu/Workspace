@@ -12,5 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5de3a9802521d1d4d8d732fae7382125, type: 3}
   m_Name: Production_Barrack
   m_EditorClassIdentifier: Assembly-CSharp::ProductionStatData
-  minionDatas: []
-  productionSpeed: 0
+  minionDatas:
+  - {fileID: 11400000, guid: 5a13db9335fc4674c9161a4c08a21e03, type: 2}
+  - {fileID: 11400000, guid: fa68afe2562c0cd438a40a708d21f946, type: 2}
+  productionSpeed: 15

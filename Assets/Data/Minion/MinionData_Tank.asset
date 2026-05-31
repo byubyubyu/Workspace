@@ -12,5 +12,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 94d57c45720a0ac4288da21e743a3602, type: 3}
   m_Name: MinionData_Tank
   m_EditorClassIdentifier: Assembly-CSharp::MinionData
-  stat: {fileID: 0}
-  prefab: {fileID: 0}
+  stat: {fileID: 11400000, guid: f060a098050e8c44698c8ef694b923a5, type: 2}
+  prefab: {fileID: 4448055481436346494, guid: d34d7b829eabffd4db2a1218c7fd753a, type: 3}

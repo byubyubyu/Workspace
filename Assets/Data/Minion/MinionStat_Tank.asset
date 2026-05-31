@@ -12,9 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a419ee2a52669e348b683978aeff2fea, type: 3}
   m_Name: MinionStat_Tank
   m_EditorClassIdentifier: Assembly-CSharp::MinionStatData
-  hp: 0
-  moveSpeed: 0
-  attackPower: 0
-  attackInterval: 0
-  visionRange: 0
-  productionCost: 0
+  hp: 100
+  moveSpeed: 2
+  attackPower: 8
+  attackInterval: 1
+  attackRange: 3
+  visionRange: 10
+  productionCost: 25

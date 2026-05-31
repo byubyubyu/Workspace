@@ -12,4 +12,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 743ab1454cd6d1d46955e94c933441e5, type: 3}
   m_Name: BuildStrategy_Auto
   m_EditorClassIdentifier: Assembly-CSharp::AutoBuildStrategy
-  buildPointPerSecond: 1
+  buildPointPerSecond: 2

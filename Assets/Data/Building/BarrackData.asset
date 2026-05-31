@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1250ace8bb0aa7444a397485045879e8, type: 3}
   m_Name: BarrackData
   m_EditorClassIdentifier: Assembly-CSharp::BarrackData
-  stat: {fileID: 0}
-  production: {fileID: 0}
-  prefab: {fileID: 0}
-  buildStrategy: {fileID: 0}
+  stat: {fileID: 11400000, guid: cfb8eec43618d4d4a818d5d2db25037a, type: 2}
+  production: {fileID: 11400000, guid: 9c2558f26cc14344fa179a292eafb7d1, type: 2}
+  prefab: {fileID: 3733204543380333294, guid: 089fc08f8800c10428f99c9e1a9fa664, type: 3}
+  buildStrategy: {fileID: 11400000, guid: 1ac4e7d7b8222ac488fe1aa9020f1308, type: 2}

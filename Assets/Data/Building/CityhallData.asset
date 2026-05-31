@@ -12,8 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a4f8d1c33b040d14cba83ac29c8285de, type: 3}
   m_Name: CityhallData
   m_EditorClassIdentifier: Assembly-CSharp::CityhallData
-  stat: {fileID: 0}
-  prefab: {fileID: 0}
-  buildStrategy: {fileID: 0}
-  costMax: 0
-  costRecovery: 0
+  stat: {fileID: 11400000, guid: 4b0801a4cc233ad4d9f7fd32f32b8b93, type: 2}
+  prefab: {fileID: 5063511901847858706, guid: 67c2a02ea109b6040a5d7f68bb7b9bc2, type: 3}
+  buildStrategy: {fileID: 11400000, guid: 4aacee99ace64a54d911c50a33ff95c4, type: 2}
+  costMax: 300
+  costRecovery: 5
