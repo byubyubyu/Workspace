@@ -9,8 +9,6 @@ public class World : MonoBehaviour
     public List<Base> Bases => bases;
     public List<Path> Paths => paths;
 
-    private void OnDrawGizmos()
-    {
-        // GizmoでBaseとPathを視覚化
-    }
+    // Gizmo は各 Base（格子）・各 Path（経路）が自身で描くため、World では描かない。
+    // （旧 OnDrawGizmos は空だったので削除）
 }

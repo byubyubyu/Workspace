@@ -26,7 +26,6 @@ public class Construction : MonoBehaviour
         if (!IsCompleted)
         {
             IsCompleted = true;
-            Debug.Log($"[Occupy] Construction completed (IMMEDIATE) {name}"); // DEBUG
             OnCompleted?.Invoke();
         }
     }
@@ -38,7 +37,6 @@ public class Construction : MonoBehaviour
         if (currentBuildPoint >= needBuildPoint)
         {
             IsCompleted = true;
-            Debug.Log($"[Occupy] Construction completed (BUILT) {name} {currentBuildPoint:F1}/{needBuildPoint:F1}"); // DEBUG
             OnCompleted?.Invoke();
         }
     }

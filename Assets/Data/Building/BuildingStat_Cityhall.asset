@@ -13,6 +13,6 @@ MonoBehaviour:
   m_Name: BuildingStat_Cityhall
   m_EditorClassIdentifier: Assembly-CSharp::BuildingStatData
   hp: 200
-  needBuildPoint: 50
+  needBuildPoint: 5
   maxCountBase: 1
   buildCost: 0

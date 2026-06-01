@@ -21,33 +21,28 @@ public class Occupier : MonoBehaviour
 
     private void OnArrived()
     {
-        if (destination == null)
-        {
-            Debug.Log($"[Occupy] Occupier({name}) arrived but destination is null"); // DEBUG
-            return;
-        }
+        if (destination == null) return;
 
         var destAI = destination.GetComponent<BaseAI>();
         Team destTeam = destAI.Team;
-        Debug.Log($"[Occupy] Occupier({name}) arrived at {destination.name} destTeam={destTeam} myTeam={minionCore.Team}"); // DEBUG
 
         if (destTeam == Team.None)
         {
-            // 中立 → 占拠要求（土地側が未完成Cityhallを生成する）
-            Debug.Log("[Occupy]  -> neutral: requesting occupation"); // DEBUG
-            destAI.RequestOccupation(minionCore.Team);
-            // 以降、兵士は Vision で自国未完成Construction を見つけ BuildingState で建設する
+            // 中立 → 占拠要求（土地側が未完成Cityhallを生成し、その core を返す）
+            BuildingCore cityhall = destAI.RequestOccupation(minionCore.Team);
+
+            // 生成された未完成Cityhallの位置へ寄る。
+            //   Waypoint終端とCityhall位置のズレに依存せず、視界(visionRange)に入れば
+            //   BuildingState（優先度1）が建設を始める。
+            //   既にCityhallがあった等で null のときは寄らない（その場で待機）。
+            if (cityhall != null)
+                GetComponent<Movement>()?.MoveTo(cityhall.transform.position);
         }
         else if (destTeam == minionCore.Team)
         {
             // 自国 → すでに自国Cityhallがあるため消滅
-            Debug.Log("[Occupy]  -> own land: minion dies"); // DEBUG
             minionCore.Die();
         }
-        else
-        {
-            // 敵国 → 何もしない（Vision/CombatState が敵建物を攻撃で拾う）
-            Debug.Log("[Occupy]  -> enemy land: do nothing (combat will handle)"); // DEBUG
-        }
+        // 敵国 → 何もしない（Vision/CombatState が敵建物を攻撃で拾う）
     }
 }

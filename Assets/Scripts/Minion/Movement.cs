@@ -45,6 +45,14 @@ public class Movement : MonoBehaviour
         if (agent.isOnNavMesh) { agent.isStopped = false; agent.SetDestination(targetPos); }
     }
 
+    // --- 占拠用：到着後に未完成Cityhallへ寄る（Occupierが使う） ---
+    // Waypoint移動は終わっている前提（arrived=true）。指定座標へ向かい、視界に入れば
+    // BuildingState（優先度1）が建設を始める。到着停止は NavMeshAgent 任せ。
+    public void MoveTo(Vector3 targetPos)
+    {
+        if (agent.isOnNavMesh) { agent.isStopped = false; agent.SetDestination(targetPos); }
+    }
+
     public void StopHere()
     {
         if (agent.isOnNavMesh) agent.isStopped = true;

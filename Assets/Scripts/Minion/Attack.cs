@@ -50,6 +50,18 @@ public class Attack : MonoBehaviour
         if (attackTimer >= attackInterval)
         {
             attackTimer = 0f;
+            // DEBUG: 誰が何を攻撃しているか（Team確認）
+            string myTeam = GetComponent<MinionCore>() != null ? GetComponent<MinionCore>().Team.ToString() : "?";
+            string tgtTeam = "?";
+            var tObj = target as Component;
+            if (tObj != null)
+            {
+                var bc = tObj.GetComponent<BuildingCore>();
+                var mc = tObj.GetComponent<MinionCore>();
+                if (bc != null) tgtTeam = "Building/" + bc.Team;
+                else if (mc != null) tgtTeam = "Minion/" + mc.Team;
+            }
+            Debug.Log($"[Combat] {name}(Team={myTeam}) -> {tObj?.name}({tgtTeam})"); // DEBUG
             target.TakeDamage(new BattleInfo { attackPower = attackPower });
         }
     }

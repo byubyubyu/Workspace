@@ -103,7 +103,6 @@ public class BaseAI : MonoBehaviour
             var cityhall = core.GetComponent<CityhallBehavior>();
             if (cityhall != null)
             {
-                Debug.Log($"[Occupy] PlaceBuilding cityhall pos={position} team={buildingTeam} startCompleted={startCompleted}"); // DEBUG
                 cityhall.OnTeamChanged += (newTeam) => team = newTeam;
                 myBase.AnnounceCityhall(cityhall);
             }
@@ -217,26 +216,30 @@ public class BaseAI : MonoBehaviour
 
     private void OnMinionProduced(MinionCore minion) { minionManager.AddMinion(minion); }
 
-    public void RequestOccupation(Team requesterTeam)
+    // 占拠要求に応じて、建設しに行くべき未完成Cityhallの core を返す（呼び出し側=Occupierが位置を使う）。
+    //   ・Cityhallが無ければ生成して返す（最初の占拠兵）
+    //   ・既に未完成Cityhallがあればそれを返す（後続の占拠兵も同じCityhallに寄って一緒に建てる）
+    //   ・既に完成済みCityhallがある／DI不足／空きセル無し のときは null（寄る必要なし or 生成不可）
+    public BuildingCore RequestOccupation(Team requesterTeam)
     {
-        Debug.Log($"[Occupy] RequestOccupation on {name} by team={requesterTeam}"); // DEBUG
-        if (buildingManager == null || buildingFactory == null || cityhallData == null)
+        if (buildingManager == null || buildingFactory == null || cityhallData == null) return null;
+
+        var existing = buildingManager.GetCityhall();
+        if (existing != null)
         {
-            Debug.Log($"[Occupy]  -> aborted (null check): bm={buildingManager != null} bf={buildingFactory != null} cityhallData={cityhallData != null}"); // DEBUG
-            return;
+            // 既にCityhallがある場合：
+            //   ・要求した国(requesterTeam)の未完成Cityhallなら、それを建設対象として返す
+            //     （後続の占拠兵も同じCityhallに寄って一緒に建てる）
+            //   ・完成済み／別の国のCityhall なら null（寄らない。別Teamのものは戦闘側が処理）
+            var construction = existing.GetComponent<Construction>();
+            var core = existing.GetComponent<BuildingCore>();
+            if (construction != null && !construction.IsCompleted && core != null && core.Team == requesterTeam)
+                return core;
+            return null;
         }
-        if (buildingManager.GetCityhall() != null)
-        {
-            Debug.Log("[Occupy]  -> aborted: cityhall already exists"); // DEBUG
-            return;
-        }
+
         Vector2Int? cell = buildingManager.GetEmptyCell();
-        if (cell == null)
-        {
-            Debug.Log("[Occupy]  -> aborted: no empty cell"); // DEBUG
-            return;
-        }
-        Debug.Log($"[Occupy]  -> spawning uncompleted cityhall at cell={cell.Value} team={requesterTeam}"); // DEBUG
-        PlaceBuilding(cityhallData, cell.Value, requesterTeam, false, 0f);
+        if (cell == null) return null;
+        return PlaceBuilding(cityhallData, cell.Value, requesterTeam, false, 0f);
     }
 }

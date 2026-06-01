@@ -156,6 +156,8 @@ MonoBehaviour:
   - {fileID: 293508776}
   - {fileID: 1658032983}
   speedMultiplier: 1
+  pathGizmoColor: {r: 1, g: 0.8, b: 0.2, a: 0.9}
+  waypointGizmoRadius: 0.3
 --- !u!4 &42621118
 Transform:
   m_ObjectHideFlags: 0
@@ -402,6 +404,8 @@ MonoBehaviour:
   gridSize: {x: 3, y: 3}
   paths:
   - {fileID: 42621117}
+  - {fileID: 1301036062}
+  gridGizmoColor: {r: 0.2, g: 0.8, b: 1, a: 0.6}
 --- !u!114 &520792535
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -421,7 +425,7 @@ MonoBehaviour:
   - cell: {x: 1, y: 1}
     data: {fileID: 11400000, guid: 4134d71a9e98a3f42aff5f7d31c19c31, type: 2}
     startCompleted: 1
-    startCost: 100
+    startCost: 10000
   - cell: {x: 0, y: 0}
     data: {fileID: 11400000, guid: 1f152fa05fd210348a5e5e42489b7251, type: 2}
     startCompleted: 1
@@ -621,6 +625,50 @@ MonoBehaviour:
   m_ShadowLayerMask: 1
   m_RenderingLayers: 1
   m_ShadowRenderingLayers: 1
+--- !u!1 &742354199
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 742354201}
+  - component: {fileID: 742354200}
+  m_Layer: 0
+  m_Name: Waypoint1
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &742354200
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 742354199}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bb7a140dedf60e1438a1db6682b42bb9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Waypoint
+--- !u!4 &742354201
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 742354199}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: -2.9, y: 0, z: 9.8}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1301036063}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &963194225
 GameObject:
   m_ObjectHideFlags: 0
@@ -824,6 +872,228 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1301036061
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1301036063}
+  - component: {fileID: 1301036062}
+  m_Layer: 0
+  m_Name: PathBase2-3
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1301036062
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1301036061}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0227076838c881d4cbf5afe7543aa8f2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Path
+  connectedBases:
+  - {fileID: 520792534}
+  - {fileID: 1469821506}
+  waypoints:
+  - {fileID: 742354200}
+  - {fileID: 1580496833}
+  speedMultiplier: 1
+  pathGizmoColor: {r: 1, g: 0.8, b: 0.2, a: 0.9}
+  waypointGizmoRadius: 0.3
+--- !u!4 &1301036063
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1301036061}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -0, y: -0, z: 30.1}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 742354201}
+  - {fileID: 1580496832}
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1469821500
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1469821507}
+  - component: {fileID: 1469821506}
+  - component: {fileID: 1469821505}
+  - component: {fileID: 1469821504}
+  - component: {fileID: 1469821503}
+  - component: {fileID: 1469821502}
+  - component: {fileID: 1469821501}
+  m_Layer: 0
+  m_Name: Base3
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1469821501
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1469821500}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 75df47cbf17aeaf459f94100afca7b66, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BaseAI
+  buildingPriorities:
+  - {fileID: 11400000, guid: c952d54195cfe9b48997b1a6fdc6254a, type: 2}
+  cityhallData: {fileID: 11400000, guid: 4134d71a9e98a3f42aff5f7d31c19c31, type: 2}
+  initialBuildings: []
+  team: 0
+  buildInterval: 3
+  minionInterval: 2
+  minMinionCount: 1
+  maxMinionCount: 3
+--- !u!114 &1469821502
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1469821500}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 065c7a249fd627f4a82a10976cf65668, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MinionFactory
+--- !u!114 &1469821503
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1469821500}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5b0557339d2ca0647aa79cb53a171dfa, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BuildingFactory
+--- !u!114 &1469821504
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1469821500}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0bd12cc8a1bb5374da9745b811f3b597, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MinionManager
+--- !u!114 &1469821505
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1469821500}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b8e0b3e0e0bbdb94aa52f960d19dcc79, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BuildingManager
+--- !u!114 &1469821506
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1469821500}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: edf6a015e9e5ff74dacb70ce46371cd9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Base
+  cellSize: 5
+  gridSize: {x: 3, y: 3}
+  paths:
+  - {fileID: 1301036062}
+  gridGizmoColor: {r: 0.2, g: 0.8, b: 1, a: 0.6}
+--- !u!4 &1469821507
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1469821500}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -40, y: 1, z: 40}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1580496831
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1580496832}
+  - component: {fileID: 1580496833}
+  m_Layer: 0
+  m_Name: Waypoint2
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1580496832
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1580496831}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: -23.29, y: 0, z: 9.8}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1301036063}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1580496833
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1580496831}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bb7a140dedf60e1438a1db6682b42bb9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Waypoint
 --- !u!1 &1631444871
 GameObject:
   m_ObjectHideFlags: 0
@@ -856,8 +1126,10 @@ MonoBehaviour:
   bases:
   - {fileID: 2049234741}
   - {fileID: 520792534}
+  - {fileID: 1469821506}
   paths:
   - {fileID: 42621117}
+  - {fileID: 1301036062}
 --- !u!4 &1631444873
 Transform:
   m_ObjectHideFlags: 0
@@ -1186,6 +1458,7 @@ MonoBehaviour:
   gridSize: {x: 3, y: 3}
   paths:
   - {fileID: 42621117}
+  gridGizmoColor: {r: 0.2, g: 0.8, b: 1, a: 0.6}
 --- !u!114 &2049234742
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1205,7 +1478,7 @@ MonoBehaviour:
   - cell: {x: 1, y: 1}
     data: {fileID: 11400000, guid: 4134d71a9e98a3f42aff5f7d31c19c31, type: 2}
     startCompleted: 1
-    startCost: 200
+    startCost: 0
   - cell: {x: 0, y: 0}
     data: {fileID: 11400000, guid: 1f152fa05fd210348a5e5e42489b7251, type: 2}
     startCompleted: 1
@@ -1285,8 +1558,10 @@ SceneRoots:
   - {fileID: 963194228}
   - {fileID: 705507995}
   - {fileID: 42621118}
+  - {fileID: 1301036063}
   - {fileID: 2049234747}
   - {fileID: 520792540}
+  - {fileID: 1469821507}
   - {fileID: 1631444873}
   - {fileID: 1017527945}
   - {fileID: 176092132}
