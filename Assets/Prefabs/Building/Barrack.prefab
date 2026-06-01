@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 6080164340761884406}
   - component: {fileID: 5329856093722032523}
   - component: {fileID: 4528223837109585660}
+  - component: {fileID: -4943978951485773534}
   m_Layer: 0
   m_Name: Barrack
   m_TagString: Building
@@ -48,7 +49,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 17d5505ea69808c4fb53ed4ea0ba1711, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BuildingCore
-  sceneData: {fileID: 0}
 --- !u!114 &6080164340761884406
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -94,6 +94,18 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &-4943978951485773534
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3733204543380333294}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4a71bedc85fb7e349a992210ff882d24, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HpGaugeSource
 --- !u!1 &7513567838862245446
 GameObject:
   m_ObjectHideFlags: 0

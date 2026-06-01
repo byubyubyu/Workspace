@@ -12,6 +12,10 @@ public class Construction : MonoBehaviour
     public bool IsManual => buildStrategy is ManualBuildStrategy; // 兵士が建設対象にするか（Manual建設のみ）
     public event Action OnCompleted;
 
+    // ゲージ表示用（BuildGaugeSourceが読む）
+    public float CurrentBuildPoint => currentBuildPoint;
+    public float NeedBuildPoint => needBuildPoint;
+
     public void Initialize(IBuildingData data, BuildStrategy strategy)
     {
         needBuildPoint = data.Stat.needBuildPoint;

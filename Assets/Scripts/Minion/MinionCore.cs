@@ -2,14 +2,19 @@
 using System;
 using UnityEngine;
 
-public class MinionCore : MonoBehaviour, IBattleInfo
+public class MinionCore : MonoBehaviour, IBattleInfo, IHealth
 {
     private float currentHp;
+    private float maxHp;
     private StateMachine stateMachine;
     private IState[] states;
     public Team Team { get; private set; }
     public bool IsDead => currentHp <= 0;
     public Vector3 Position => transform.position; // IBattleInfo
+
+    // IHealth（ゲージ表示用）
+    public float CurrentHp => currentHp;
+    public float MaxHp => maxHp;
 
     public event Action OnDestroyed;
     public event Action OnArrived;
@@ -17,6 +22,7 @@ public class MinionCore : MonoBehaviour, IBattleInfo
     public void Initialize(IMinionData data, Team team)
     {
         currentHp = data.Stat.hp;
+        maxHp = data.Stat.hp;
         Team = team;
 
         // B-2: データ由来の初期設定をまとめて流し込む

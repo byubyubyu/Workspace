@@ -133,6 +133,8 @@ GameObject:
   - component: {fileID: 6364658566830079537}
   - component: {fileID: 7035906903085577301}
   - component: {fileID: 8032980188060100698}
+  - component: {fileID: 5880705877424111553}
+  - component: {fileID: 540610845896056798}
   m_Layer: 0
   m_Name: Minion
   m_TagString: Minion
@@ -320,3 +322,31 @@ NavMeshAgent:
   m_BaseOffset: 0
   m_WalkableMask: 4294967295
   m_ObstacleAvoidanceType: 4
+--- !u!114 &5880705877424111553
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4377348057659764180}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4a71bedc85fb7e349a992210ff882d24, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HpGaugeSource
+--- !u!114 &540610845896056798
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4377348057659764180}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d11e9d18b01166b489c8605cfefab2a5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GaugeAttacher
+  statBarPrefab: {fileID: 6893355925911490379, guid: ae00ed342ae8821429cea71871552600, type: 3}
+  gauges: 00000000
+  baseHeight: 2
+  spacing: 0.25

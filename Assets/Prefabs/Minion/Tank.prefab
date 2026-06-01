@@ -21,6 +21,8 @@ GameObject:
   - component: {fileID: 4957186981493992732}
   - component: {fileID: 62471596085702209}
   - component: {fileID: 1197272974541607848}
+  - component: {fileID: -341312705273365449}
+  - component: {fileID: -8052638031116769397}
   m_Layer: 0
   m_Name: Tank
   m_TagString: Minion
@@ -208,6 +210,34 @@ NavMeshAgent:
   m_BaseOffset: 0
   m_WalkableMask: 4294967295
   m_ObstacleAvoidanceType: 4
+--- !u!114 &-341312705273365449
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4448055481436346494}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4a71bedc85fb7e349a992210ff882d24, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HpGaugeSource
+--- !u!114 &-8052638031116769397
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4448055481436346494}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d11e9d18b01166b489c8605cfefab2a5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GaugeAttacher
+  statBarPrefab: {fileID: 6893355925911490379, guid: ae00ed342ae8821429cea71871552600, type: 3}
+  gauges: 00000000
+  baseHeight: 2
+  spacing: 0.25
 --- !u!1 &8274006980806993353
 GameObject:
   m_ObjectHideFlags: 0

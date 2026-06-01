@@ -14,6 +14,9 @@ GameObject:
   - component: {fileID: 6570047085217158090}
   - component: {fileID: 4181343580999254528}
   - component: {fileID: 9022884677142122081}
+  - component: {fileID: 5754579348356064864}
+  - component: {fileID: -2318034850733996110}
+  - component: {fileID: -8388013501813794438}
   m_Layer: 0
   m_Name: Cityhall
   m_TagString: Building
@@ -61,7 +64,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 17d5505ea69808c4fb53ed4ea0ba1711, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BuildingCore
-  sceneData: {fileID: 11400000, guid: 4134d71a9e98a3f42aff5f7d31c19c31, type: 2}
 --- !u!114 &6570047085217158090
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -107,6 +109,46 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &5754579348356064864
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5063511901847858706}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4a71bedc85fb7e349a992210ff882d24, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HpGaugeSource
+--- !u!114 &-2318034850733996110
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5063511901847858706}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f3ec0ebb1c2e8a744aae68e883c9d80f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BuildGaugeSource
+--- !u!114 &-8388013501813794438
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5063511901847858706}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d11e9d18b01166b489c8605cfefab2a5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GaugeAttacher
+  statBarPrefab: {fileID: 6893355925911490379, guid: ae00ed342ae8821429cea71871552600, type: 3}
+  gauges: 0000000001000000
+  baseHeight: 2
+  spacing: 0.25
 --- !u!1 &8985892687046185566
 GameObject:
   m_ObjectHideFlags: 0
