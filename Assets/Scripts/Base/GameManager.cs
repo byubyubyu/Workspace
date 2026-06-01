@@ -8,9 +8,9 @@ public class GameManager : MonoBehaviour
     private void Start()
     {
         InitializeBases();
-        PlaceInitialBuildings();   // 先にCityhallを生成してTeamを確定させる
-        InitializeNeighborTeams(); // その後で隣接Teamを読む（空振り防止）
-        SubscribeNeighborChanges();
+        PlaceInitialBuildings();   // 先にCityhallを生成してTeamを確定させる。
+                                   // この生成時に各Baseが隣接へ購読を張る（AnnounceCityhall）。
+        InitializeNeighborTeams(); // その後で隣接Teamの初期値を直接読む（空振り防止）。
         StartGameLoop();
     }
 
@@ -35,31 +35,17 @@ public class GameManager : MonoBehaviour
             b.GetComponent<BaseAI>().PlaceInitialBuildings();
     }
 
-    // 起動時に隣接Teamを直接読む（イベント任せにしない）
+    // 起動時に隣接Teamを直接読む（イベント任せにしない）。
     private void InitializeNeighborTeams()
     {
         foreach (var b in world.Bases)
             b.GetComponent<BaseAI>().InitializeNeighborTeams();
     }
 
-    // 以降のTeam変化(占拠など)はイベントで更新する。Cityhall生成後なので購読も張れる。
-    private void SubscribeNeighborChanges()
-    {
-        foreach (var b in world.Bases)
-        {
-            var baseAI = b.GetComponent<BaseAI>();
-            foreach (var path in b.Paths)
-            {
-                foreach (var neighborBase in path.ConnectedBases)
-                {
-                    if (neighborBase == b) continue;
-                    var cityhall = neighborBase.GetComponentInChildren<CityhallBehavior>();
-                    if (cityhall != null)
-                        cityhall.OnTeamChanged += (team) => baseAI.UpdateNeighborTeam(neighborBase, team);
-                }
-            }
-        }
-    }
+    // 旧 SubscribeNeighborChanges は廃止。
+    //   理由: 隣接 Cityhall を GetComponentInChildren で探していたが Cityhall は別GameObjectのため空振り、
+    //         かつ Start で1回だけのため占拠の後付け Cityhall を購読できなかった。
+    //   現在: 隣接購読は Cityhall 生成時の Base.AnnounceCityhall に一本化（初期配置・占拠の両方を網羅）。
 
     private void StartGameLoop()
     {

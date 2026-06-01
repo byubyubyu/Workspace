@@ -43,9 +43,9 @@ public class BaseAI : MonoBehaviour
         this.buildingFactory = buildingFactory;
         this.minionFactory = minionFactory;
 
-        var cityhall = GetComponent<CityhallBehavior>();
-        if (cityhall != null)
-            cityhall.OnTeamChanged += (newTeam) => team = newTeam;
+        // 旧: ここで GetComponent<CityhallBehavior>() による自Cityhall購読を行っていたが、
+        //     Cityhall は別GameObjectのため null で空振りしていた。
+        //     自Cityhallの購読は PlaceBuilding（生成した core から直接）に移動した。
     }
 
     public void InitializeNeighborTeams()
@@ -93,6 +93,21 @@ public class BaseAI : MonoBehaviour
         BuildingCore core = buildingFactory.Create(data, position);
         core.Initialize(data, buildingTeam, startCost);
         buildingManager.AddBuilding(core, cell);
+
+        // Cityhall を建てたとき：
+        //   ・自分の team を OnTeamChanged で更新する（占拠完成で None→自国、破壊で None）
+        //   ・隣接 Base にもこの Cityhall を購読させる（分散型・Base が張り合いを担う）
+        // CompleteImmediately より前に張ることで、初期配置の即発火を取りこぼさない。
+        if (data is CityhallData)
+        {
+            var cityhall = core.GetComponent<CityhallBehavior>();
+            if (cityhall != null)
+            {
+                Debug.Log($"[Occupy] PlaceBuilding cityhall pos={position} team={buildingTeam} startCompleted={startCompleted}"); // DEBUG
+                cityhall.OnTeamChanged += (newTeam) => team = newTeam;
+                myBase.AnnounceCityhall(cityhall);
+            }
+        }
 
         if (startCompleted)
             core.GetComponent<Construction>()?.CompleteImmediately();
@@ -204,10 +219,24 @@ public class BaseAI : MonoBehaviour
 
     public void RequestOccupation(Team requesterTeam)
     {
-        if (buildingManager == null || buildingFactory == null || cityhallData == null) return;
-        if (buildingManager.GetCityhall() != null) return;
+        Debug.Log($"[Occupy] RequestOccupation on {name} by team={requesterTeam}"); // DEBUG
+        if (buildingManager == null || buildingFactory == null || cityhallData == null)
+        {
+            Debug.Log($"[Occupy]  -> aborted (null check): bm={buildingManager != null} bf={buildingFactory != null} cityhallData={cityhallData != null}"); // DEBUG
+            return;
+        }
+        if (buildingManager.GetCityhall() != null)
+        {
+            Debug.Log("[Occupy]  -> aborted: cityhall already exists"); // DEBUG
+            return;
+        }
         Vector2Int? cell = buildingManager.GetEmptyCell();
-        if (cell == null) return;
+        if (cell == null)
+        {
+            Debug.Log("[Occupy]  -> aborted: no empty cell"); // DEBUG
+            return;
+        }
+        Debug.Log($"[Occupy]  -> spawning uncompleted cityhall at cell={cell.Value} team={requesterTeam}"); // DEBUG
         PlaceBuilding(cityhallData, cell.Value, requesterTeam, false, 0f);
     }
 }

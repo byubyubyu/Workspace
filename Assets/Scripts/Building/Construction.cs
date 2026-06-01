@@ -9,6 +9,7 @@ public class Construction : MonoBehaviour
     private BuildStrategy buildStrategy;
     private bool initialized = false;
     public bool IsCompleted { get; private set; }
+    public bool IsManual => buildStrategy is ManualBuildStrategy; // 兵士が建設対象にするか（Manual建設のみ）
     public event Action OnCompleted;
 
     public void Initialize(IBuildingData data, BuildStrategy strategy)
@@ -25,6 +26,7 @@ public class Construction : MonoBehaviour
         if (!IsCompleted)
         {
             IsCompleted = true;
+            Debug.Log($"[Occupy] Construction completed (IMMEDIATE) {name}"); // DEBUG
             OnCompleted?.Invoke();
         }
     }
@@ -36,6 +38,7 @@ public class Construction : MonoBehaviour
         if (currentBuildPoint >= needBuildPoint)
         {
             IsCompleted = true;
+            Debug.Log($"[Occupy] Construction completed (BUILT) {name} {currentBuildPoint:F1}/{needBuildPoint:F1}"); // DEBUG
             OnCompleted?.Invoke();
         }
     }

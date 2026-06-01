@@ -9,6 +9,7 @@ public class Vision : MonoBehaviour
 
     private List<TargetCandidate> attackCandidates = new List<TargetCandidate>();
     private Construction buildTarget;
+    private Construction prevBuildTarget; // DEBUG: 無→有の変化検出用
 
     public void Initialize(IMinionData data, Team team)
     {
@@ -47,11 +48,17 @@ public class Vision : MonoBehaviour
                 else
                 {
                     var construction = hit.GetComponent<Construction>();
-                    if (construction != null && !construction.IsCompleted)
+                    // 兵士が建設するのは Manual建設のみ（AutoBuild の Barrack 等は手伝わない）
+                    if (construction != null && !construction.IsCompleted && construction.IsManual)
                         buildTarget = construction;
                 }
             }
         }
+
+        // DEBUG: 建設対象を新たに捉えた瞬間だけログ（毎フレーム抑制）
+        if (buildTarget != null && prevBuildTarget == null)
+            Debug.Log($"[Occupy] Vision({name}) caught buildTarget {buildTarget.name} myPos={transform.position} targetPos={buildTarget.transform.position} dist={Vector3.Distance(transform.position, buildTarget.transform.position):F2} visionRange={visionRange}");
+        prevBuildTarget = buildTarget;
     }
 
     public bool HasEnemy() => attackCandidates.Count > 0;
