@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: AttackMove_Minion
   m_EditorClassIdentifier: Assembly-CSharp::AttackMove
   powerMultiplier: 1
-  windupTime: 0.2
-  activeTime: 0.5
-  recoveryTime: 0.2
-  staggerDuration: 0
+  windupTime: 0.3
+  activeTime: 0.3
+  recoveryTime: 0.3
+  staggerDuration: 0.5
   reach: 3

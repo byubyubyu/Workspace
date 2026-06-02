@@ -12,4 +12,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: dc3c3247805357947973f110d1680f11, type: 3}
   m_Name: VisionData_Minion
   m_EditorClassIdentifier: Assembly-CSharp::VisionData
-  visionRange: 20
+  visionRange: 10

@@ -16,5 +16,5 @@ MonoBehaviour:
   windupTime: 0.5
   activeTime: 0.5
   recoveryTime: 0.5
-  staggerDuration: 0
-  reach: 5
+  staggerDuration: 1
+  reach: 3

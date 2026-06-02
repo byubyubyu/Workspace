@@ -14,5 +14,5 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::BuildingStatData
   hp: 80
   needBuildPoint: 20
-  maxCountBase: 2
+  maxCountBase: 1
   buildCost: 30
