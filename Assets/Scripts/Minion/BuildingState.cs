@@ -11,7 +11,7 @@ public class BuildingState : MonoBehaviour, IState
     private StateMachine stateMachine;
     private Construction current; // 今建てている対象（完成検知のため保持）
 
-    public int Priority => 1;
+    public int Priority => 10;
 
     public void Initialize(StateMachine stateMachine)
     {

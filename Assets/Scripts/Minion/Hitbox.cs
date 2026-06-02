@@ -1,16 +1,18 @@
 // 保存先: Assets/Scripts/Minion/Hitbox.cs
-// 攻撃判定。兵士の子オブジェクトに付ける（isTrigger Collider＋Hitboxレイヤー）。
+// 攻撃判定。兵士の子オブジェクトに付ける（isTrigger Box Collider＋Hitboxレイヤー）。
 //   普段はColliderを無効化。Attackが判定フェーズ中だけ有効化する（GameObjectは常にアクティブ）。
 //   OnTriggerEnterで相手Hurtboxを検知し、相手Core(IBattleInfo)へダメージを渡す（前回確定の案A）。
-//   多段ヒット防止：この一振りで当てた相手を記録し、同じ相手に二重に当てない。
+//   多段ヒット防止：この一振りで当てた相手を記録し、同じ相手に二重に当てない（範囲攻撃＝複数相手には当たる）。
 //   Hitbox×Hurtboxのみのマトリクスなので、相手レイヤーのチェックは不要（来るのはHurtboxだけ）。
+//   デバッグ可視化：Collider有効中だけ、判定範囲のBox枠を赤で描く（OnDrawGizmos）。
+//   Sceneビューに表示。Game Viewのツールバーで Gizmos をオンにすれば Game Viewにも出る（エディタのみ）。
 using System.Collections.Generic;
 using UnityEngine;
 
-[RequireComponent(typeof(Collider))]
+[RequireComponent(typeof(BoxCollider))]
 public class Hitbox : MonoBehaviour
 {
-    private Collider col;
+    private BoxCollider col;
     private float attackPower;     // 今回の一撃の実威力（Attackが設定）
     private float staggerDuration; // 今回の一撃のひるみ時間（Attackが設定）
     private IBattleInfo owner;     // 攻撃する本人（自分を殴らないためのガード用）
@@ -18,12 +20,11 @@ public class Hitbox : MonoBehaviour
 
     private void Awake()
     {
-        col = GetComponent<Collider>();
+        col = GetComponent<BoxCollider>();
         col.isTrigger = true;
         col.enabled = false; // 普段は無効。判定フェーズ中だけ有効化する
     }
 
-    // Attackが攻撃の本人を設定する（初期化時に1回）。
     public void Setup(IBattleInfo owner)
     {
         this.owner = owner;
@@ -55,5 +56,20 @@ public class Hitbox : MonoBehaviour
 
         hitThisSwing.Add(victim);
         victim.TakeDamage(new BattleInfo { attackPower = attackPower, staggerDuration = staggerDuration });
+    }
+
+    private void OnDrawGizmos()
+    {
+        // 判定が出ている（Collider有効）間だけ、判定範囲のBox枠を描く（デバッグ用・エディタのみ）。
+        //   Sceneビューに表示。Game Viewのツールバーで Gizmos をオンにすれば Game Viewにも出る。
+        var box = col != null ? col : GetComponent<BoxCollider>();
+        if (box == null || !box.enabled) return;
+
+        // BoxColliderのcenter/sizeを、回転・スケール・位置を反映して描く。
+        Gizmos.color = Color.red;
+        Matrix4x4 prev = Gizmos.matrix;
+        Gizmos.matrix = transform.localToWorldMatrix;
+        Gizmos.DrawWireCube(box.center, box.size);
+        Gizmos.matrix = prev;
     }
 }

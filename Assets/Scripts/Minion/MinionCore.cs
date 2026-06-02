@@ -81,7 +81,13 @@ public class MinionCore : MonoBehaviour, IBattleInfo, IHealth
         // 受け手が自分のdefenseでダメージを計算する（防御計算は受け手側の責務）。
         float damage = DamageCalculator.Calc(info.attackPower, defense);
         health.TakeDamage(damage);
-        // ひるみ(info.staggerDuration)は塊3-Bで使う。今は受け取るだけ。
+
+        // ひるみを発動する。Staggerコンポーネントを持つ兵士のみ（持たない兵士はひるまない）。
+        if (info.staggerDuration > 0f)
+        {
+            var stagger = GetComponent<Stagger>();
+            if (stagger != null) stagger.Apply(info.staggerDuration);
+        }
 
         // HPを減らすのみ。HP0(IsEmpty)になると次フレームDeadState(最優先)が選ばれDie()する。
     }

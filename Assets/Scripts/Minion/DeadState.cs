@@ -7,7 +7,7 @@ public class DeadState : MonoBehaviour, IState
     private MinionCore minionCore;
     private StateMachine stateMachine;
 
-    public int Priority => 3;
+    public int Priority => 40;
 
     public void Initialize(StateMachine stateMachine)
     {

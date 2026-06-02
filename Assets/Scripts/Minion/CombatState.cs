@@ -18,7 +18,7 @@ public class CombatState : MonoBehaviour, IState
     private ICombatStrategy combat = new DumbCombatStrategy(); // 初期＝愚直AI（将来差し替え・非対称）
     private IBattleInfo currentTarget;
 
-    public int Priority => 2;
+    public int Priority => 20;
 
     public void Initialize(StateMachine stateMachine)
     {
