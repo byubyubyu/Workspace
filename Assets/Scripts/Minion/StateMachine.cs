@@ -28,6 +28,6 @@ public class StateMachine
             currentState?.Enter();
         }
 
-        currentState?.Update();
+        currentState?.Tick();
     }
 }

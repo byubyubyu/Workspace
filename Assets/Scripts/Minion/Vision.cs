@@ -53,8 +53,6 @@ public class Vision : MonoBehaviour
                 }
             }
         }
-        // DEBUG: 検出結果を毎フレーム出力（原因特定用・あとで消す）
-        Debug.Log($"[Vision] {name} 敵候補数={attackCandidates.Count} 建設対象={(buildTarget != null)}");
     }
 
     public bool HasEnemy() => attackCandidates.Count > 0;

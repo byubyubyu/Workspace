@@ -60,7 +60,6 @@ public class Attack : MonoBehaviour
     public void StartAttack()
     {
         if (IsAttacking) return;
-        Debug.Log($"[AttackDBG] {name} StartAttack。Stagger中={(GetComponent<Stagger>() != null ? GetComponent<Stagger>().IsStaggered.ToString() : "no-stagger")}"); // DEBUG 一時
         phase = Phase.Windup;
         phaseTimer = 0f;
     }

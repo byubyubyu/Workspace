@@ -22,6 +22,6 @@ public class MovingState : MonoBehaviour, IState
         movement.ResumeWaypoint(); // 戦闘などから戻ってきたらWaypoint移動を再開
     }
 
-    public void Update() { }
+    public void Tick() { }
     public void Exit() { }
 }

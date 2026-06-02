@@ -32,7 +32,7 @@ public class CombatState : MonoBehaviour, IState
 
     public void Enter() { }
 
-    public void Update()
+    public void Tick()
     {
         // 前フレームのターゲットが破壊済みなら捨てる
         if (currentTarget != null && (currentTarget as Object) == null)

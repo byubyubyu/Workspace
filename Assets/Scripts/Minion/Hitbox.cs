@@ -52,6 +52,7 @@ public class Hitbox : MonoBehaviour
         IBattleInfo victim = hurtbox.Owner;
         if (victim == null) return;
         if (victim == owner) return;          // 自分自身は殴らない
+        if (victim.Team == owner.Team) return; // 味方は殴らない（A-1：中立Team.Noneには当たる）
         if (hitThisSwing.Contains(victim)) return; // この振りで既に当てた相手は二重ヒットさせない
 
         hitThisSwing.Add(victim);

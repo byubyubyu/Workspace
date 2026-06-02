@@ -22,6 +22,6 @@ public class DeadState : MonoBehaviour, IState
         minionCore.Die(); // OnDestroyed 発火＋消滅
     }
 
-    public void Update() { }
+    public void Tick() { }
     public void Exit() { }
 }

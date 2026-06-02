@@ -25,7 +25,7 @@ public class BuildingState : MonoBehaviour, IState
 
     public void Enter() { }
 
-    public void Update()
+    public void Tick()
     {
         var target = vision.GetBuildTarget();
         if (target != null)

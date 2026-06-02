@@ -27,14 +27,13 @@ public class StaggerState : MonoBehaviour, IState
 
     public void Enter()
     {
-        Debug.Log($"[StaggerDBG] {name} ひるみEnter。ForceCancel呼ぶ。IsAttacking={(attack != null ? attack.IsAttacking.ToString() : "no-attack")}"); // DEBUG 一時
         // 進行中の攻撃を無条件中断（ひるみの割り込み）。
         if (attack != null) attack.ForceCancel();
         // その場でのけぞる（移動停止）。
         if (movement != null) movement.StopHere();
     }
 
-    public void Update()
+    public void Tick()
     {
         // 何もしない。ひるみ時間の経過はStaggerが自分で減らす。時間切れでCanEnterがfalseになり抜ける。
     }
