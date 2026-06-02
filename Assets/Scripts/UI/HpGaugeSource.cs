@@ -12,8 +12,8 @@ public class HpGaugeSource : MonoBehaviour, IGaugeSource
         health = GetComponent<IHealth>();
     }
 
-    public float Current => health != null ? health.CurrentHp : 0f;
-    public float Max => health != null ? health.MaxHp : 0f;
+    public float Current => health != null ? health.Current : 0f;
+    public float Max => health != null ? health.Max : 0f;
     public GaugeType Type => GaugeType.Hp;
     public Team Team => health != null ? health.Team : Team.None;
 }

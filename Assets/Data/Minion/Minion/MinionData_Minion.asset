@@ -12,5 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 94d57c45720a0ac4288da21e743a3602, type: 3}
   m_Name: MinionData_Minion
   m_EditorClassIdentifier: Assembly-CSharp::MinionData
-  stat: {fileID: 11400000, guid: 2b8441b78e867d2458bef7ec2d5ad5c9, type: 2}
+  vitality: {fileID: 11400000, guid: b03833fa84ead8845a0be626904b0f5b, type: 2}
+  movement: {fileID: 11400000, guid: 77b060ac07109ca4b87a28997c75f65e, type: 2}
+  attack: {fileID: 11400000, guid: 4395254a1d6e1de4d83b545e6fb44590, type: 2}
+  vision: {fileID: 11400000, guid: 74c2ab28a14d28b41ae02bf5c7e96a28, type: 2}
+  builder: {fileID: 11400000, guid: c041445d3b188ca49985e695ac0f4987, type: 2}
+  productionCost: 20
   prefab: {fileID: 4377348057659764180, guid: 1c45165531bd9c948af344d4f27b8c98, type: 3}

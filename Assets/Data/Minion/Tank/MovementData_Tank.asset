@@ -9,13 +9,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a419ee2a52669e348b683978aeff2fea, type: 3}
-  m_Name: MinionStat_Minion
-  m_EditorClassIdentifier: Assembly-CSharp::MinionStatData
-  hp: 30
+  m_Script: {fileID: 11500000, guid: bdd8a6c4d7159e3429f58385ae32523e, type: 3}
+  m_Name: MovementData_Tank
+  m_EditorClassIdentifier: Assembly-CSharp::MovementData
   moveSpeed: 3
-  attackPower: 5
-  attackInterval: 1
-  attackRange: 2
-  visionRange: 10
-  productionCost: 25

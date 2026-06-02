@@ -7,6 +7,6 @@ public class AutoBuildStrategy : BuildStrategy
 
     public override void UpdateBuildPoint(Construction construction, float deltaTime)
     {
-        construction.AddBuildPoint(buildPointPerSecond * deltaTime);
+        construction.Add(buildPointPerSecond * deltaTime);
     }
 }

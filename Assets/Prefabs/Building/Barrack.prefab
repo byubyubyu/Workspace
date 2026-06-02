@@ -14,7 +14,7 @@ GameObject:
   - component: {fileID: 5329856093722032523}
   - component: {fileID: 4528223837109585660}
   - component: {fileID: -4943978951485773534}
-  m_Layer: 0
+  m_Layer: 12
   m_Name: Barrack
   m_TagString: Building
   m_Icon: {fileID: 0}
@@ -118,7 +118,7 @@ GameObject:
   - component: {fileID: 2944975030149882044}
   - component: {fileID: 6606405182045302503}
   - component: {fileID: 1992296191519105628}
-  m_Layer: 0
+  m_Layer: 12
   m_Name: Cube
   m_TagString: Untagged
   m_Icon: {fileID: 0}

@@ -23,7 +23,7 @@ GameObject:
   - component: {fileID: 1197272974541607848}
   - component: {fileID: -341312705273365449}
   - component: {fileID: -8052638031116769397}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Tank
   m_TagString: Minion
   m_Icon: {fileID: 0}
@@ -250,7 +250,7 @@ GameObject:
   - component: {fileID: 8266876462706909156}
   - component: {fileID: 7903459543567201541}
   - component: {fileID: 2502169524930856865}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Sphere
   m_TagString: Untagged
   m_Icon: {fileID: 0}

@@ -1,68 +1,111 @@
 // 保存先: Assets/Scripts/Minion/Attack.cs
+// アクション戦闘の攻撃実体（プレイヤー・兵士共通の「振る」動作）。
+//   StartAttack()で開始し、3フェーズ（前隙→判定→後隙）を自分のUpdateで自走する。
+//   今の向きに振る（引数なし・自動で吸い付かない）。判定フェーズ中だけHitboxを有効化する。
+//   フェーズ管理は初期=時間タイマー（方法A）。将来アニメーション駆動（方法B）へ差し替え可。
+//   実体とStateの独立性：進行中の攻撃はState遷移では止まらない（ひるみ/回避後隙のForceCancelを除く）。
 using UnityEngine;
 
 public class Attack : MonoBehaviour
 {
-    private float attackPower;
-    private float attackInterval;
-    private float attackRange;
-    private float attackTimer;
-    private IBattleInfo target;
+    private enum Phase { None, Windup, Active, Recovery }
 
-    public float AttackRange => attackRange;
+    [SerializeField] private Hitbox hitbox; // 子のHitbox（Inspectorでアサイン推奨。未設定ならInChildrenで取得）
 
-    public void Initialize(IMinionData data)
+    private float attackPower;     // 実威力 = AttackData.attackPower × moves[0].powerMultiplier
+    private float staggerDuration; // 命中時に相手へ渡すひるみ時間
+    private float reach;           // 攻撃間合い（AI判断用。実際の当たりはHitboxのCollider）
+    private float windupTime;
+    private float activeTime;
+    private float recoveryTime;
+
+    private Phase phase = Phase.None;
+    private float phaseTimer;
+    private IBattleInfo target; // 立ち回り用の参照（攻撃自体は今の向きに振るので命中には使わない）
+
+    public float AttackRange => reach;
+    public bool IsAttacking => phase != Phase.None;
+    public bool CanCancel => phase == Phase.Recovery; // 後隙のみキャンセル可
+
+    public void Initialize(AttackData data)
     {
-        attackPower = data.Stat.attackPower;
-        attackInterval = data.Stat.attackInterval;
-        attackRange = data.Stat.attackRange;
+        attackPower = data.attackPower;
+
+        if (hitbox == null) hitbox = GetComponentInChildren<Hitbox>(true);
+        if (hitbox != null) hitbox.Setup(GetComponent<MinionCore>());
+
+        if (data.moves == null || data.moves.Count == 0)
+        {
+            Debug.LogError($"[Attack] AttackData.moves が空です: {name}");
+            reach = 1f; windupTime = 0.2f; activeTime = 0.1f; recoveryTime = 0.5f; staggerDuration = 0f;
+            return;
+        }
+
+        AttackMove move = data.moves[0];
+        attackPower *= move.powerMultiplier;
+        reach = move.reach;
+        windupTime = move.windupTime;
+        activeTime = move.activeTime;
+        recoveryTime = move.recoveryTime;
+        staggerDuration = move.staggerDuration;
     }
 
+    // 立ち回り用に対象を渡す（向き直りに使う）。命中判定自体はHitboxの物理で行う。
     public void SetTarget(IBattleInfo target)
     {
         this.target = target;
     }
 
-    // 破壊済み(Destroyされた)対象を掴んでいないか判定する。
-    // IBattleInfo はインターフェースなので、UnityEngine.Object にキャストして Unity の null 判定に通す。
-    private bool IsTargetAlive()
+    // 攻撃を開始する。今の向きに振る（自動で吸い付かない）。攻撃中は受け付けない。
+    public void StartAttack()
     {
-        if (target == null) return false;
-        var obj = target as Object;
-        if (obj == null) return false; // Destroy済みは Unity の == null で true になる
-        return true;
+        if (IsAttacking) return;
+        phase = Phase.Windup;
+        phaseTimer = 0f;
     }
 
-    public bool IsInRange()
+    // 強制中断（ひるみ・回避の後隙キャンセルで使う。塊3-Bで本格利用）。
+    public void ForceCancel()
     {
-        if (!IsTargetAlive()) return false;
-        Vector3 a = transform.position; a.y = 0f;
-        Vector3 b = target.Position; b.y = 0f;
-        return Vector3.Distance(a, b) <= attackRange;
+        if (hitbox != null) hitbox.Deactivate();
+        phase = Phase.None;
+        phaseTimer = 0f;
     }
 
     private void Update()
     {
-        if (!IsTargetAlive()) { target = null; return; } // 死んだ対象は捨てる
-        if (!IsInRange()) { attackTimer = 0f; return; }
+        if (phase == Phase.None) return;
 
-        attackTimer += Time.deltaTime;
-        if (attackTimer >= attackInterval)
+        phaseTimer += Time.deltaTime;
+
+        switch (phase)
         {
-            attackTimer = 0f;
-            // DEBUG: 誰が何を攻撃しているか（Team確認）
-            string myTeam = GetComponent<MinionCore>() != null ? GetComponent<MinionCore>().Team.ToString() : "?";
-            string tgtTeam = "?";
-            var tObj = target as Component;
-            if (tObj != null)
-            {
-                var bc = tObj.GetComponent<BuildingCore>();
-                var mc = tObj.GetComponent<MinionCore>();
-                if (bc != null) tgtTeam = "Building/" + bc.Team;
-                else if (mc != null) tgtTeam = "Minion/" + mc.Team;
-            }
-            Debug.Log($"[Combat] {name}(Team={myTeam}) -> {tObj?.name}({tgtTeam})"); // DEBUG
-            target.TakeDamage(new BattleInfo { attackPower = attackPower });
+            case Phase.Windup:
+                if (phaseTimer >= windupTime)
+                {
+                    phase = Phase.Active;
+                    phaseTimer = 0f;
+                    // 判定フェーズ開始：今回の数値を構え、多段リストclear、Collider有効化
+                    if (hitbox != null) hitbox.Activate(attackPower, staggerDuration);
+                }
+                break;
+
+            case Phase.Active:
+                if (phaseTimer >= activeTime)
+                {
+                    phase = Phase.Recovery;
+                    phaseTimer = 0f;
+                    if (hitbox != null) hitbox.Deactivate(); // 判定フェーズ終了：Collider無効化
+                }
+                break;
+
+            case Phase.Recovery:
+                if (phaseTimer >= recoveryTime)
+                {
+                    phase = Phase.None;
+                    phaseTimer = 0f;
+                }
+                break;
         }
     }
 }

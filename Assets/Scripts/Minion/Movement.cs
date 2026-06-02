@@ -18,10 +18,10 @@ public class Movement : MonoBehaviour
 
     private void Awake() { agent = GetComponent<NavMeshAgent>(); }
 
-    public void Initialize(IMinionData data, MinionCore core)
+    public void Initialize(MovementData data, MinionCore core)
     {
         minionCore = core;
-        agent.speed = data.Stat.moveSpeed;
+        agent.speed = data.moveSpeed;
     }
 
     public void SetWaypoints(List<Waypoint> waypoints)

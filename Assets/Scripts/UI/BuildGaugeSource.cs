@@ -15,8 +15,8 @@ public class BuildGaugeSource : MonoBehaviour, IGaugeSource
         core = GetComponent<BuildingCore>();
     }
 
-    public float Current => construction != null ? construction.CurrentBuildPoint : 0f;
-    public float Max => construction != null ? construction.NeedBuildPoint : 0f;
+    public float Current => construction != null ? construction.Current : 0f;
+    public float Max => construction != null ? construction.Max : 0f;
     public GaugeType Type => GaugeType.Build;
     public Team Team => core != null ? core.Team : Team.None;
 }

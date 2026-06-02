@@ -146,7 +146,7 @@ public class BaseAI : MonoBehaviour
         if (best == null) return;
 
         IBuildingData buildData = best.BuildingData;
-        costPool.TryConsume(buildData.Stat.buildCost);
+        costPool.Consume(buildData.Stat.buildCost);
         PlaceBuilding(buildData, emptyCell.Value, team, false, 0f);
     }
 
@@ -172,13 +172,14 @@ public class BaseAI : MonoBehaviour
 
             MinionData chosen = minionDatas[Random.Range(0, minionDatas.Count)];
             int count = Random.Range(minMinionCount, maxMinionCount + 1); // 作ろうとする数
-            float cost = chosen.Stat.productionCost;
+            float cost = chosen.ProductionCost;
 
             int producedCount = 0;
             for (int i = 0; i < count; i++)
             {
-                if (!costPool.CanAfford(cost)) break; // コストが尽きたら打ち切り
-                costPool.TryConsume(cost);
+                // Consumeはアトミック（払えれば消費しtrue、払えなければ消費せずfalse）。
+                // 払えなくなった時点で打ち切る。CanAffordとの二度チェックは不要。
+                if (!costPool.Consume(cost)) break;
                 entry.prod.ProduceOne(chosen, team, waypoints, destination);
                 producedCount++;
             }

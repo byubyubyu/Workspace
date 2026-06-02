@@ -13,6 +13,6 @@ MonoBehaviour:
   m_Name: Production_Barrack
   m_EditorClassIdentifier: Assembly-CSharp::ProductionStatData
   minionDatas:
-  - {fileID: 11400000, guid: 5a13db9335fc4674c9161a4c08a21e03, type: 2}
-  - {fileID: 11400000, guid: fa68afe2562c0cd438a40a708d21f946, type: 2}
+  - {fileID: 11400000, guid: 79a7d6835d5156747b9d6160d74a9139, type: 2}
+  - {fileID: 11400000, guid: 9541fb99c384a1647b6cb40532127570, type: 2}
   productionSpeed: 15

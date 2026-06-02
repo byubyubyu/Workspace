@@ -10,9 +10,9 @@ public class Vision : MonoBehaviour
     private List<TargetCandidate> attackCandidates = new List<TargetCandidate>();
     private Construction buildTarget;
 
-    public void Initialize(IMinionData data, Team team)
+    public void Initialize(VisionData data, Team team)
     {
-        visionRange = data.Stat.visionRange;
+        visionRange = data.visionRange;
         this.team = team;
     }
 
@@ -53,6 +53,8 @@ public class Vision : MonoBehaviour
                 }
             }
         }
+        // DEBUG: 検出結果を毎フレーム出力（原因特定用・あとで消す）
+        Debug.Log($"[Vision] {name} 敵候補数={attackCandidates.Count} 建設対象={(buildTarget != null)}");
     }
 
     public bool HasEnemy() => attackCandidates.Count > 0;

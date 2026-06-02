@@ -17,7 +17,7 @@ GameObject:
   - component: {fileID: 5754579348356064864}
   - component: {fileID: -2318034850733996110}
   - component: {fileID: -8388013501813794438}
-  m_Layer: 0
+  m_Layer: 12
   m_Name: Cityhall
   m_TagString: Building
   m_Icon: {fileID: 0}
@@ -161,7 +161,7 @@ GameObject:
   - component: {fileID: 4124394599369971602}
   - component: {fileID: 3507732600295989059}
   - component: {fileID: 5190673720861828267}
-  m_Layer: 0
+  m_Layer: 12
   m_Name: Cube
   m_TagString: Untagged
   m_Icon: {fileID: 0}
