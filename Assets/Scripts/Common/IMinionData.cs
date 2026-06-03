@@ -11,6 +11,7 @@ public interface IMinionData
     VisionData Vision { get; }
     BuilderData Builder { get; }
     StaminaData Stamina { get; }
+    DodgeData Dodge { get; }
     float ProductionCost { get; }
     GameObject Prefab { get; }
 }

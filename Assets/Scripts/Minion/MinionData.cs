@@ -9,6 +9,7 @@ public class MinionData : ScriptableObject, IMinionData
     [SerializeField] private VisionData vision;
     [SerializeField] private BuilderData builder;
     [SerializeField] private StaminaData stamina;
+    [SerializeField] private DodgeData dodge;
     [SerializeField] private float productionCost; // 直接フィールド（特定コンポーネントに属さないメタ情報）
     [SerializeField] private GameObject prefab;
 
@@ -18,6 +19,7 @@ public class MinionData : ScriptableObject, IMinionData
     public VisionData Vision => vision;
     public BuilderData Builder => builder;
     public StaminaData Stamina => stamina;
+    public DodgeData Dodge => dodge;
     public float ProductionCost => productionCost;
     public GameObject Prefab => prefab;
 }

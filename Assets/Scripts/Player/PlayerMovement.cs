@@ -2,21 +2,41 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 
 [RequireComponent(typeof(CharacterController))]
-public class PlayerMovement : MonoBehaviour
+public class PlayerMovement : MonoBehaviour, IDasher
 {
     [SerializeField] private float moveSpeed = 5f;
     [SerializeField] private Transform cameraTransform;
     private CharacterController characterController;
+    private Attack attack; // 攻撃中の移動入力ロック判定用
+
+    // 回避ダッシュ（IDasher）。Dodge実体が制御する。ダッシュ中は入力移動を止める。
+    private bool dashing;
+    private Vector3 dashDir;
+    private float dashSpeed;
+
+    public void Dash(Vector3 dir, float speed) { dashing = true; dashDir = dir; dashSpeed = speed; }
+    public void EndDash() { dashing = false; }
 
     private void Awake()
     {
         characterController = GetComponent<CharacterController>();
+        attack = GetComponent<Attack>();
         if (cameraTransform == null && Camera.main != null)
             cameraTransform = Camera.main.transform;
     }
 
     private void Update()
     {
+        // 攻撃中は移動入力を受け付けない（重い一撃。GDD「攻撃中は移動不可」）。
+        if (attack != null && attack.IsAttacking) return;
+
+        // 回避ダッシュ中は入力移動をせず、ダッシュ方向へ動かす。
+        if (dashing)
+        {
+            characterController.SimpleMove(dashDir * dashSpeed);
+            return;
+        }
+
         var keyboard = Keyboard.current;
         if (keyboard == null) return;
 

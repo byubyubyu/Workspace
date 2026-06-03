@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.AI;
 
 [RequireComponent(typeof(NavMeshAgent))]
-public class Movement : MonoBehaviour
+public class Movement : MonoBehaviour, IDasher
 {
     [SerializeField] private float arriveRadius = 1.5f;
 
@@ -13,10 +13,19 @@ public class Movement : MonoBehaviour
     private int currentWaypointIndex;
     private bool arrived;
     private MinionCore minionCore;
+    private Attack attack;        // 攻撃中の移動ロック判定用（兄弟コンポーネント・無い兵士はnull）
 
     private bool chasing = false; // 追尾モード中か（戦闘中）
 
-    private void Awake() { agent = GetComponent<NavMeshAgent>(); }
+    private bool dashing = false; // 回避ダッシュ中か（DodgeがDash/EndDashで制御）
+    private Vector3 dashDir;
+    private float dashSpeed;
+
+    private void Awake()
+    {
+        agent = GetComponent<NavMeshAgent>();
+        attack = GetComponent<Attack>();
+    }
 
     public void Initialize(MovementData data, MinionCore core)
     {
@@ -58,6 +67,23 @@ public class Movement : MonoBehaviour
         if (agent.isOnNavMesh) agent.isStopped = true;
     }
 
+    // --- 回避ダッシュ（Dodgeが使う） ---
+    // 自前でagent.Moveするのでpathfindingは止める。dirは水平・正規化済み前提。
+    public void Dash(Vector3 dir, float speed)
+    {
+        dashing = true;
+        dashDir = dir;
+        dashSpeed = speed;
+        if (agent.isOnNavMesh) agent.isStopped = true;
+    }
+
+    // ダッシュ終了。通常移動を再開できる状態に戻す（次フレームChase/Waypointが再指示する）。
+    public void EndDash()
+    {
+        dashing = false;
+        if (agent.isOnNavMesh) agent.isStopped = false;
+    }
+
     // 戦闘終了 → Waypoint移動を再開
     public void ResumeWaypoint()
     {
@@ -68,6 +94,18 @@ public class Movement : MonoBehaviour
 
     private void Update()
     {
+        // 攻撃中は移動しない（前隙→判定→後隙の全フェーズ。GDD「攻撃中は移動不可」）。
+        // 実体レベルで堅くロックする（Strategyが新行動を起こさないことに頼らない）。
+        if (attack != null && attack.IsAttacking)
+        {
+            if (agent.isOnNavMesh && !agent.isStopped) agent.isStopped = true;
+            return;
+        }
+        if (dashing)                  // 回避ダッシュ中は自前でMove（Waypoint/Chase処理はしない）
+        {
+            if (agent.isOnNavMesh) agent.Move(dashDir * dashSpeed * Time.deltaTime);
+            return;
+        }
         if (chasing) return;          // 追尾中はCombatStateが指揮するのでWaypoint処理はしない
         if (arrived) return;
         if (waypoints == null || waypoints.Count == 0) return;

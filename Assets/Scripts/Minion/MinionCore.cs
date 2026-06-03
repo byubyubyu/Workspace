@@ -73,6 +73,13 @@ public class MinionCore : MonoBehaviour, IBattleInfo, IHealth
             else stamina.Initialize(data.Stamina, team);
         }
 
+        var dodge = GetComponent<Dodge>();
+        if (dodge != null)
+        {
+            if (data.Dodge == null) Debug.LogError($"[MinionCore] Dodgeあり、DodgeData欠け: {name}");
+            else dodge.Initialize(data.Dodge);
+        }
+
         // 子のHurtboxに自分(IBattleInfo)を渡す（HitboxがここからCoreを取得してダメージを渡す）。
         var hurtbox = GetComponentInChildren<Hurtbox>(true);
         if (hurtbox != null) hurtbox.SetOwner(this);

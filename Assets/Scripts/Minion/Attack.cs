@@ -22,6 +22,7 @@ public class Attack : MonoBehaviour
     private Phase phase = Phase.None;
     private float phaseTimer;
     private IBattleInfo target; // 立ち回り用の参照（攻撃自体は今の向きに振るので命中には使わない）
+    private Dodge dodge;        // 回避中は攻撃不可の判定用（兄弟コンポーネント・無い兵士はnull）
 
     public float AttackRange => reach;
     public bool IsAttacking => phase != Phase.None;
@@ -32,7 +33,8 @@ public class Attack : MonoBehaviour
         attackPower = data.attackPower;
 
         if (hitbox == null) hitbox = GetComponentInChildren<Hitbox>(true);
-        if (hitbox != null) hitbox.Setup(GetComponent<MinionCore>());
+        if (hitbox != null) hitbox.Setup(GetComponent<IBattleInfo>()); // 兵士=MinionCore / プレイヤー=PlayerCombatCore
+        dodge = GetComponent<Dodge>();
 
         if (data.moves == null || data.moves.Count == 0)
         {
@@ -60,6 +62,7 @@ public class Attack : MonoBehaviour
     public void StartAttack()
     {
         if (IsAttacking) return;
+        if (dodge != null && dodge.IsDodging) return; // 回避中は攻撃不可
         phase = Phase.Windup;
         phaseTimer = 0f;
     }

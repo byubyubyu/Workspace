@@ -8,9 +8,19 @@ using UnityEngine;
 public class Hurtbox : MonoBehaviour
 {
     public IBattleInfo Owner { get; private set; }
+    private Collider col;
+
+    private void Awake() { col = GetComponent<Collider>(); }
 
     public void SetOwner(IBattleInfo owner)
     {
         Owner = owner;
+    }
+
+    // i-frame用：falseで自分のColliderを無効化（Hitboxに当たらなくなる＝無敵）。
+    public void SetVulnerable(bool vulnerable)
+    {
+        if (col == null) col = GetComponent<Collider>();
+        if (col != null) col.enabled = vulnerable;
     }
 }

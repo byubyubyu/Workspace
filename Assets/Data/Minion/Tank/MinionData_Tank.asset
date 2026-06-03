@@ -18,5 +18,6 @@ MonoBehaviour:
   vision: {fileID: 11400000, guid: e0edaa602fb768847803b0c6d2fa638b, type: 2}
   builder: {fileID: 11400000, guid: 68c67b825e9a894488a45691f2423fd2, type: 2}
   stamina: {fileID: 11400000, guid: 072dfb14e861f714ca7894eab2494d02, type: 2}
+  dodge: {fileID: 11400000, guid: da591cec5f74c1e42afe822e2a21c6c7, type: 2}
   productionCost: 50
   prefab: {fileID: 4448055481436346494, guid: d34d7b829eabffd4db2a1218c7fd753a, type: 3}
