@@ -204,6 +204,8 @@ GameObject:
   - component: {fileID: 211128006967716681}
   - component: {fileID: -4520725979433186278}
   - component: {fileID: 5895276332300887047}
+  - component: {fileID: -6173024208376946896}
+  - component: {fileID: 215516406080673818}
   m_Layer: 8
   m_Name: Minion
   m_TagString: Minion
@@ -419,7 +421,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GaugeAttacher
   statBarPrefab: {fileID: 6893355925911490379, guid: ae00ed342ae8821429cea71871552600, type: 3}
-  gauges: 00000000
+  gauges: 0000000002000000
   baseHeight: 2
   spacing: 0.25
 --- !u!54 &211128006967716681
@@ -473,6 +475,30 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d6842a7d5fdfa784db941abf08362a29, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::StaggerState
+--- !u!114 &-6173024208376946896
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4377348057659764180}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8f8c2c0e9a3ecf949b2eec364b8ce695, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Stamina
+--- !u!114 &215516406080673818
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4377348057659764180}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8eb3eb18c86a1ac46b7ceb0ce033ec7c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::StaminaGaugeSource
 --- !u!1 &8820842117282034641
 GameObject:
   m_ObjectHideFlags: 0

@@ -3,6 +3,7 @@
 public enum GaugeType
 {
     Hp,
-    Build,   // 建設進捗
-    // 将来: Mana, Stamina など
+    Build,    // 建設進捗
+    Stamina,  // スタミナ
+    // 将来: Mana など
 }

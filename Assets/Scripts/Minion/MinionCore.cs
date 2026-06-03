@@ -66,6 +66,13 @@ public class MinionCore : MonoBehaviour, IBattleInfo, IHealth
             else builder.Initialize(data.Builder);
         }
 
+        var stamina = GetComponent<Stamina>();
+        if (stamina != null)
+        {
+            if (data.Stamina == null) Debug.LogError($"[MinionCore] Staminaあり、StaminaData欠け: {name}");
+            else stamina.Initialize(data.Stamina, team);
+        }
+
         // 子のHurtboxに自分(IBattleInfo)を渡す（HitboxがここからCoreを取得してダメージを渡す）。
         var hurtbox = GetComponentInChildren<Hurtbox>(true);
         if (hurtbox != null) hurtbox.SetOwner(this);
