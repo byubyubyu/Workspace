@@ -15,7 +15,8 @@ public class Movement : MonoBehaviour, IDasher
     private MinionCore minionCore;
     private Attack attack;        // 攻撃中の移動ロック判定用（兄弟コンポーネント・無い兵士はnull）
 
-    private bool chasing = false; // 追尾モード中か（戦闘中）
+    private bool chasing = false; // 追尾モード中か（Approachで移動目的地を持つ）
+    private bool combatControlled = false; // 戦闘がMovementを掌握中か（CombatStateがEnter/Exitで制御）
 
     private bool dashing = false; // 回避ダッシュ中か（DodgeがDash/EndDashで制御）
     private Vector3 dashDir;
@@ -53,6 +54,11 @@ public class Movement : MonoBehaviour, IDasher
         chasing = true;
         if (agent.isOnNavMesh) { agent.isStopped = false; agent.SetDestination(targetPos); }
     }
+
+    // CombatStateが戦闘の開始/終了で呼ぶ。戦闘中は移動をCombatStateが指揮（Chase/StopHere）するため、
+    //   Movement側はWaypoint処理（再開含む）を一切しない。近接で即Attack（Chaseを挟まない）でも漏れない。
+    public void BeginCombat() { combatControlled = true; }
+    public void EndCombat()   { combatControlled = false; }
 
     // --- 占拠用：到着後に未完成Cityhallへ寄る（Occupierが使う） ---
     // Waypoint移動は終わっている前提（arrived=true）。指定座標へ向かい、視界に入れば
@@ -106,10 +112,15 @@ public class Movement : MonoBehaviour, IDasher
             if (agent.isOnNavMesh) agent.Move(dashDir * dashSpeed * Time.deltaTime);
             return;
         }
+        if (combatControlled) return; // 戦闘中はCombatStateが指揮。Waypoint処理（停止からの再開含む）は一切しない
         if (chasing) return;          // 追尾中はCombatStateが指揮するのでWaypoint処理はしない
         if (arrived) return;
         if (waypoints == null || waypoints.Count == 0) return;
         if (!agent.isOnNavMesh) return;
+
+        // 攻撃ロックやStopHereでagentが止められたまま戻ってきたら、現在Waypointへ向けて再開する。
+        //   戦闘明けにResumeWaypointが攻撃中で上書きされ、isStopped=trueのまま残るケースの保険。
+        if (agent.isStopped) GoToCurrent();
 
         Vector3 a = transform.position; a.y = 0f;
         Vector3 b = waypoints[currentWaypointIndex].Position; b.y = 0f;

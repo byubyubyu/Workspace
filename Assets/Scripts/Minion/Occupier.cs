@@ -82,10 +82,16 @@ public class Occupier : MonoBehaviour
         }
         else
         {
-            // 敵国：Baseへ寄れば視界が敵Cityhallを拾い、CombatStateが攻撃する。
+            // 敵国：敵Cityhallの位置へ寄れば、視界が敵建物を拾いCombatStateが攻撃する。
+            //   Base隅(transform.position)だと視界外で拾えないことがあるため本体位置へ寄る。
+            //   Cityhallが無い瞬間はBase位置にフォールバック。
+            Vector3 target = destination.transform.position;
+            Vector3? chPos = destAI.GetCityhallPosition();
+            if (chPos.HasValue) target = chPos.Value;
+
             if (justFreed || lastMode != Mode.ToBase)
             {
-                movement.MoveTo(destination.transform.position);
+                movement.MoveTo(target);
                 lastMode = Mode.ToBase;
             }
         }

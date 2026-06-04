@@ -16,7 +16,10 @@ public class Vision : MonoBehaviour
         this.team = team;
     }
 
-    private void Update()
+    // MinionCoreが毎フレーム、状態選択(StateMachine)の直前に呼ぶ（プル型を明示）。
+    //   自前Updateでの自動検出はやめ、駆動主体をMinionCoreに一本化＝更新順の非保証を排除する。
+    //   これで生成直後の初回フレームから敵を検出済みにできる。
+    public void Refresh()
     {
         attackCandidates.Clear();
         buildTarget = null;

@@ -8,6 +8,7 @@ public class MinionCore : MonoBehaviour, IBattleInfo, IHealth
     private float defense; // 受け手側が持つ防御力（VitalityData.defense）
     private StateMachine stateMachine;
     private IState[] states;
+    private Vision vision; // 状態選択の直前にRefreshを駆動するため保持
     public Team Team { get; private set; }
     public bool IsDead => health != null && health.IsEmpty;
     public Vector3 Position => transform.position; // IBattleInfo
@@ -45,7 +46,7 @@ public class MinionCore : MonoBehaviour, IBattleInfo, IHealth
             else movement.Initialize(data.Movement, this);
         }
 
-        var vision = GetComponent<Vision>();
+        vision = GetComponent<Vision>();
         if (vision != null)
         {
             if (data.Vision == null) Debug.LogError($"[MinionCore] Visionあり、VisionData欠け: {name}");
@@ -119,6 +120,9 @@ public class MinionCore : MonoBehaviour, IBattleInfo, IHealth
 
     private void Update()
     {
+        // 状態選択の直前にVisionの検出を駆動する（プル型を明示・更新順の非保証を排除）。
+        //   生成直後の初回フレームから敵を検出済みにできる＝湧いた瞬間に敵がいれば戦闘に入る。
+        vision?.Refresh();
         stateMachine?.Update();
     }
 }

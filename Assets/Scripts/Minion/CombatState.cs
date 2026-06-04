@@ -30,7 +30,7 @@ public class CombatState : MonoBehaviour, IState
 
     public bool CanEnter() => vision.HasEnemy();
 
-    public void Enter() { }
+    public void Enter() { movement.BeginCombat(); } // 戦闘がMovementを掌握（Waypoint処理を止める）
 
     public void Tick()
     {
@@ -75,10 +75,10 @@ public class CombatState : MonoBehaviour, IState
 
     public void Exit()
     {
+        movement.EndCombat(); // 掌握を解除。以降のWaypoint再開はMovingStateのEnter(ResumeWaypoint)が担う
         // 攻撃の実体には触らない（進行中の攻撃は自走で振り切る＝実体とStateの独立性の原則）。
         currentTarget = null;
         attack.SetTarget(null);
-        // Movementの戻し（ResumeWaypoint）はMovingStateのEnterが担うのでここでは呼ばない。
     }
 
     private bool IsInRange(IBattleInfo t)

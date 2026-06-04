@@ -5,6 +5,7 @@ using UnityEngine;
 public class BuildingCore : MonoBehaviour, IBattleInfo, IHealth
 {
     private Health health;
+    private bool destroyed; // 二重破壊防止
     public BuildingType Type { get; private set; }
     public Team Team { get; private set; }
     public Vector3 Position => transform.position; // IBattleInfo
@@ -38,12 +39,18 @@ public class BuildingCore : MonoBehaviour, IBattleInfo, IHealth
 
     public void TakeDamage(BattleInfo info)
     {
+        if (destroyed) return; // 既に破壊済みなら無視（同フレーム多段ヒットの二重発火防止）
+
         // BattleInfoの解釈はCore側の責務。建物は当面 defense=0（素のダメージをそのまま受ける）。
         //   将来、兵士と同様にdefenseを持たせる余地を残す（DamageCalculatorに渡す値を変えるだけ）。
-        // HP減算・0検知はHealthに委譲し、破壊の「始末」（OnDestroyed発火）はCoreが行う。
+        // HP減算・0検知はHealthに委譲し、破壊の「始末」（OnDestroyed発火＋本体Destroy）はCoreが行う。
         float damage = DamageCalculator.Calc(info.attackPower, 0f);
         health.TakeDamage(damage);
         if (health.IsEmpty)
-            OnDestroyed?.Invoke();
+        {
+            destroyed = true;
+            OnDestroyed?.Invoke();  // 辞書からの除外・Cityhallなら同土地全消滅 等の通知
+            Destroy(gameObject);    // 建物本体を実際に消す（Cityhall以外もこれで壊れる）
+        }
     }
 }
