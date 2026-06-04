@@ -19,6 +19,7 @@ public class MinimapMarker : MonoBehaviour, IPointerClickHandler
 
     public void OnPointerClick(PointerEventData eventData)
     {
+        if (eventData.dragging) return; // ドラッグ中はクリック扱いにしない（地図パンを優先）
         onClicked?.Invoke(Base);
     }
 }

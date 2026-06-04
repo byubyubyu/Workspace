@@ -13,6 +13,15 @@ public class BaseAI : MonoBehaviour
         public float startCost = 0f;
     }
 
+    // 1指示先ぶんの派遣指示（M-3c-2）。
+    //   ・target   ：派遣先のBase
+    //   ・quotas   ：その派遣先に送る (兵種, 数) のリスト。countは「残数」で、生産のたびに減る。
+    public class DirectedOrder
+    {
+        public Base target;
+        public List<(MinionData type, int count)> quotas = new List<(MinionData type, int count)>();
+    }
+
     [SerializeField] private List<BuildingPriorityData> buildingPriorities;
     [SerializeField] private CityhallData cityhallData;
     [SerializeField] private List<InitialBuilding> initialBuildings;
@@ -33,11 +42,10 @@ public class BaseAI : MonoBehaviour
     private float buildTimer = 0f;
     private float minionTimer = 0f;
 
-    // プレイヤー指示（M-3）：指示中だけ派遣先をdirectedTargetに固定。タイマー切れで自動解除、新指示で上書き。
-    private Base directedTarget;
+    // プレイヤー指示（M-3）：指示中だけ派遣先を固定。タイマー切れで自動解除、新指示で全上書き。
+    // M-3c-2：複数の派遣先を同時に持てる（指示先ごとに 兵種×数）。タイマーは全体で1つ共有（A1）。
     private float directedTimer = 0f;
-    // 兵種ごとのノルマ（行き先は1つ）。M-3c-2：複数兵種を同時指定
-    private readonly List<(MinionData type, int remaining)> directedQuotas = new List<(MinionData, int)>();
+    private readonly List<DirectedOrder> directedOrders = new List<DirectedOrder>();
 
     public Team Team => team;
 
@@ -83,20 +91,49 @@ public class BaseAI : MonoBehaviour
     public void UpdateNeighborTeam(Base neighborBase, Team team) { neighborTeams[neighborBase] = team; }
     public void StartDecision() { isRunning = true; }
 
-    // プレイヤーからの派遣先指示。指定時間だけ有効。再呼び出しで上書き。
-    public void SetDirectedTarget(Base target, List<(MinionData type, int count)> quotas, float duration)
+    // プレイヤーからの派遣指示（複数指示先・一括）。指定時間だけ有効。再呼び出しで全上書き（F1）。
+    //   渡されたordersはこちらで検証してコピーするので、呼び出し側はそのまま破棄してよい。
+    public void SetDirectedOrders(List<DirectedOrder> orders, float duration)
     {
-        directedQuotas.Clear();
-        if (quotas != null)
-            foreach (var q in quotas)
-                if (q.type != null && q.count > 0) directedQuotas.Add((q.type, q.count));
-
-        if (directedQuotas.Count == 0) { ClearDirectedTarget(); return; } // 有効なノルマなし
-        directedTarget = target;
+        directedOrders.Clear();
+        if (orders != null)
+        {
+            foreach (var o in orders)
+            {
+                if (o == null || o.target == null || o.quotas == null) continue;
+                var clean = new DirectedOrder { target = o.target };
+                foreach (var q in o.quotas)
+                    if (q.type != null && q.count > 0) clean.quotas.Add((q.type, q.count));
+                if (clean.quotas.Count > 0) directedOrders.Add(clean);
+            }
+        }
+        if (directedOrders.Count == 0) { ClearDirectedTarget(); return; } // 有効な指示なし
         directedTimer = duration;
     }
-    public void ClearDirectedTarget() { directedTarget = null; directedQuotas.Clear(); directedTimer = 0f; }
-    public Base DirectedTarget => directedTimer > 0f ? directedTarget : null; // 表示用（指示中のみ）
+
+    // 旧API（単一指示先）。他に呼び出し元があった場合の互換用。内部で1件の指示に変換して委譲する。
+    //   ※ 他に呼び出し元が無ければ削除してよい。
+    public void SetDirectedTarget(Base target, List<(MinionData type, int count)> quotas, float duration)
+    {
+        var order = new DirectedOrder { target = target };
+        if (quotas != null) order.quotas.AddRange(quotas);
+        SetDirectedOrders(new List<DirectedOrder> { order }, duration);
+    }
+
+    public void ClearDirectedTarget() { directedOrders.Clear(); directedTimer = 0f; }
+
+    // 表示用：指示中（タイマー有効）の全派遣先。指示が無ければ空リスト。
+    public List<Base> GetDirectedTargets()
+    {
+        var result = new List<Base>();
+        if (directedTimer <= 0f) return result;
+        foreach (var o in directedOrders)
+            if (o.target != null) result.Add(o.target);
+        return result;
+    }
+
+    // 旧API（単一）。互換用：指示中の先頭の派遣先（無ければnull）。
+    public Base DirectedTarget => (directedTimer > 0f && directedOrders.Count > 0) ? directedOrders[0].target : null;
 
     // この土地のBarrackが生産できる兵種の重複なしリスト（M-3b：指示UIの兵種候補に使う）。
     public List<MinionData> GetProducibleMinions()
@@ -211,34 +248,40 @@ public class BaseAI : MonoBehaviour
         CostPool costPool = cityhall != null ? cityhall.CostPool : null;
         if (costPool == null) return;
 
+        bool directed = directedTimer > 0f && directedOrders.Count > 0;
+
         foreach (var entry in barracks)
         {
             if (!entry.prod.CanProduce()) continue;
 
-            Base destination = SelectDispatchTarget();
-            if (destination == null) continue;
-            List<Waypoint> waypoints = ResolvePath(destination);
-
             var minionDatas = entry.data.Production.minionDatas;
             if (minionDatas == null || minionDatas.Count == 0) continue;
 
-            bool directed = directedTimer > 0f && directedQuotas.Count > 0;
+            Base destination;
             MinionData chosen;
             int count;            // 今サイクルでこのBarrackが作る上限
-            int quotaIndex = -1;
+            int orderIndex = -1;  // 指示中：充足する指示先
+            int quotaIndex = -1;  // 指示中：その指示先の中で充足する兵種ノルマ
+
             if (directed)
             {
-                // このBarrackが作れて、まだ残っているノルマを1件選ぶ
-                quotaIndex = FindProducibleQuota(minionDatas);
-                if (quotaIndex < 0) continue; // 作れるノルマがない→このBarrackはスキップ
-                chosen = directedQuotas[quotaIndex].type;
-                count = Mathf.Min(directedQuotas[quotaIndex].remaining, maxMinionCount); // 変更1：一気量は最大量基準
+                // B1（順番に充足）：指示先リストを先頭から見て、行き先が有効で、
+                //   このBarrackが作れて残っているノルマを最初の1件だけ処理する。
+                if (!FindServableOrder(minionDatas, out orderIndex, out quotaIndex))
+                    continue; // この指示先群にこのBarrackが充てられるノルマが無い→スキップ（ランダム派遣はしない）
+                destination = directedOrders[orderIndex].target;
+                chosen = directedOrders[orderIndex].quotas[quotaIndex].type;
+                count = Mathf.Min(directedOrders[orderIndex].quotas[quotaIndex].count, maxMinionCount);
             }
             else
             {
+                destination = SelectRandomDispatchTarget();
+                if (destination == null) continue;
                 chosen = minionDatas[Random.Range(0, minionDatas.Count)];
                 count = Random.Range(minMinionCount, maxMinionCount + 1);
             }
+
+            List<Waypoint> waypoints = ResolvePath(destination);
             float cost = chosen.ProductionCost;
 
             int producedCount = 0;
@@ -248,7 +291,11 @@ public class BaseAI : MonoBehaviour
                 if (!costPool.Consume(cost)) break;
                 entry.prod.ProduceOne(chosen, team, waypoints, destination);
                 producedCount++;
-                if (directed) { var q = directedQuotas[quotaIndex]; directedQuotas[quotaIndex] = (q.type, q.remaining - 1); }
+                if (directed)
+                {
+                    var q = directedOrders[orderIndex].quotas[quotaIndex];
+                    directedOrders[orderIndex].quotas[quotaIndex] = (q.type, q.count - 1);
+                }
             }
 
             // 1匹でも作れたときだけクールダウンに入る
@@ -256,32 +303,44 @@ public class BaseAI : MonoBehaviour
                 entry.prod.StartCooldown();
         }
 
-        // 全ノルマを送り切ったら指示解除（ランダムに戻る）
-        if (directedTimer > 0f && directedQuotas.Count > 0 && AllQuotasDone())
-            ClearDirectedTarget();
+        // 充足済みの指示先（残ノルマ0）を掃除。全部消えたら指示解除（ランダムに戻る）。
+        if (directed)
+        {
+            directedOrders.RemoveAll(o => AllDone(o));
+            if (directedOrders.Count == 0) ClearDirectedTarget();
+        }
     }
 
-    // このBarrackが作れて、まだ残っているノルマのインデックス（無ければ-1）。
-    private int FindProducibleQuota(List<MinionData> producible)
+    // B1：先頭の指示先から順に、行き先が有効でこのBarrackが作れる残ノルマを探す（無ければfalse）。
+    private bool FindServableOrder(List<MinionData> producible, out int orderIndex, out int quotaIndex)
     {
-        for (int i = 0; i < directedQuotas.Count; i++)
-            if (directedQuotas[i].remaining > 0 && producible.Contains(directedQuotas[i].type)) return i;
+        for (int oi = 0; oi < directedOrders.Count; oi++)
+        {
+            if (!IsValidDispatch(directedOrders[oi].target)) continue; // 自国化した等の無効な行き先は飛ばす
+            int qi = FindProducibleQuota(directedOrders[oi].quotas, producible);
+            if (qi >= 0) { orderIndex = oi; quotaIndex = qi; return true; }
+        }
+        orderIndex = -1; quotaIndex = -1;
+        return false;
+    }
+
+    // 指定ノルマ群の中で、このBarrackが作れて残っている兵種のインデックス（無ければ-1）。
+    private int FindProducibleQuota(List<(MinionData type, int count)> quotas, List<MinionData> producible)
+    {
+        for (int i = 0; i < quotas.Count; i++)
+            if (quotas[i].count > 0 && producible.Contains(quotas[i].type)) return i;
         return -1;
     }
 
-    private bool AllQuotasDone()
+    private bool AllDone(DirectedOrder o)
     {
-        for (int i = 0; i < directedQuotas.Count; i++)
-            if (directedQuotas[i].remaining > 0) return false;
+        foreach (var q in o.quotas) if (q.count > 0) return false;
         return true;
     }
 
-    private Base SelectDispatchTarget()
+    // 指示が無いときのランダム派遣先：隣接していて中立または敵のBaseから1つ。
+    private Base SelectRandomDispatchTarget()
     {
-        // 指示中かつ有効（隣接・中立or敵）なら、プレイヤー指定の行き先を優先。
-        if (directedTarget != null && directedTimer > 0f && IsValidDispatch(directedTarget))
-            return directedTarget;
-
         List<Base> candidates = new List<Base>();
         foreach (var kv in neighborTeams)
             if (kv.Value == Team.None || kv.Value != team) candidates.Add(kv.Key);

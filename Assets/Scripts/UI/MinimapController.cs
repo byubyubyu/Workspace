@@ -3,10 +3,13 @@
 //   ・背景：俯瞰オルソカメラ→RenderTexture→RawImage。開いている間だけカメラ有効＝普段ゼロコスト。
 //   ・オーバーレイ：Baseマーカー（Team色・クリック可）、Path線（Waypoint経由の折れ線）。位置は WorldToViewportPoint で地形と一致。
 //   ・M-3a：指示元（自国＆プレイヤーの近く）→指示先（隣接の中立/敵）の2段クリックで、指示元BaseAIに派遣先を指示。指示中は矢印表示。
+//   ・M-3c-2：複数の派遣先に「指示先ごと×兵種ごとの数」を溜めて一括発令（F1）。指示先選択→数入力→「追加」を繰り返し、最後に「発令」。
+//   ・パン：MinimapDragPannerからのドラッグでミニマップカメラを移動（地図をつかんで動かす）。開くたびにPlayerの真上から開始。
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.InputSystem;
+using UnityEngine.EventSystems;
 
 public class MinimapController : MonoBehaviour
 {
@@ -21,7 +24,9 @@ public class MinimapController : MonoBehaviour
     [SerializeField] private GameObject quotaPanel;           // 兵種ごとの数を入れるパネル（M-3c-2）
     [SerializeField] private MinimapQuotaRow quotaRowPrefab;  // 兵種1行（名前＋−／数／＋）
     [SerializeField] private RectTransform quotaRowContainer; // 兵種行を並べる親
-    [SerializeField] private Button quotaConfirmButton;       // 発令
+    [SerializeField] private Button quotaAddButton;           // この派遣先を追加（F1）
+    [SerializeField] private Button quotaConfirmButton;       // 全発令（溜めた全指示先を一括送信）
+    [SerializeField] private Text pendingSummaryLabel;        // 追加済み指示の一覧表示（任意・未設定可）
 
     [Header("操作")]
     [SerializeField] private Key toggleKey = Key.M;
@@ -30,6 +35,7 @@ public class MinimapController : MonoBehaviour
     [SerializeField] private int defaultCount = 0;      // 兵種ごとの数の初期値（M-3c-2）
     [SerializeField] private int minCount = 0;          // 0＝その兵種は送らない
     [SerializeField] private int maxCount = 10;
+    [SerializeField] private bool invertDrag = false;  // パン方向が逆に感じたらON（地図をつかんで動かす向きを反転）
 
     [Header("見た目")]
     [SerializeField] private float markerSize = 16f;
@@ -37,12 +43,14 @@ public class MinimapController : MonoBehaviour
     [SerializeField] private Color redColor = new Color(0.9f, 0.2f, 0.2f);
     [SerializeField] private Color blueColor = new Color(0.2f, 0.4f, 0.9f);
     [SerializeField] private Color neutralColor = new Color(0.6f, 0.6f, 0.6f);
-    [SerializeField] private Color orderColor = new Color(1f, 0.9f, 0.2f); // 指示中の矢印色
+    [SerializeField] private Color orderColor = new Color(1f, 0.9f, 0.2f); // 指示中の矢印色（発令済み）
+    [SerializeField] private Color previewColor = new Color(1f, 0.6f, 0.1f); // 発令前プレビュー矢印色（追加済み）
 
     private bool open;
     private bool built;
     private Base orderSource;        // 選択中の指示元（null＝未選択）
-    private Base pendingDestination; // 数入力待ちの指示先（M-3c-2）
+    private Base pendingDestination; // 数入力中の指示先（M-3c-2。追加前の一時状態）
+    private readonly List<BaseAI.DirectedOrder> pendingOrders = new List<BaseAI.DirectedOrder>(); // 追加済み指示（発令待ち・F1）
 
     private readonly List<(Base baseRef, Image marker)> markers = new List<(Base, Image)>();
     private readonly List<(Vector3 a, Vector3 b, RectTransform line)> segments = new List<(Vector3, Vector3, RectTransform)>();
@@ -51,7 +59,8 @@ public class MinimapController : MonoBehaviour
 
     private void Start()
     {
-        if (quotaConfirmButton != null) quotaConfirmButton.onClick.AddListener(OnConfirmQuota);
+        if (quotaAddButton != null) quotaAddButton.onClick.AddListener(OnAddOrder);
+        if (quotaConfirmButton != null) quotaConfirmButton.onClick.AddListener(OnConfirmAll);
         SetOpen(false);
     }
 
@@ -77,6 +86,7 @@ public class MinimapController : MonoBehaviour
         if (value)
         {
             if (!built) Build();
+            CenterCameraOnPlayer(); // 開くたびにPlayerの真上から開始
             UpdateOverlayPositions();
         }
         else
@@ -178,7 +188,10 @@ public class MinimapController : MonoBehaviour
         foreach (var (baseRef, marker) in markers)
         {
             if (baseRef == null || marker == null) continue;
-            marker.rectTransform.anchoredPosition = WorldToOverlay(baseRef.transform.position);
+            bool visible = IsInView(baseRef.transform.position);
+            if (marker.gameObject.activeSelf != visible) marker.gameObject.SetActive(visible);
+            if (visible)
+                marker.rectTransform.anchoredPosition = WorldToOverlay(baseRef.transform.position);
         }
         foreach (var (wa, wb, line) in segments)
         {
@@ -187,17 +200,99 @@ public class MinimapController : MonoBehaviour
         }
     }
 
-    // --- クリック（2段選択：指示元→指示先） ---
+    // ワールド座標がミニマップカメラの視野（0..1）内か。マーカーの表示/非表示判定に使う。
+    //   ・点（マーカー）はこれでON/OFFする。線（Path・矢印）は端で切れるべきなのでMaskでクリップする。
+    private bool IsInView(Vector3 worldPos)
+    {
+        if (minimapCamera == null) return true;
+        Vector3 vp = minimapCamera.WorldToViewportPoint(worldPos);
+        return vp.x >= 0f && vp.x <= 1f && vp.y >= 0f && vp.y <= 1f;
+    }
+
+    // ミニマップカメラをPlayerの真上へ（XZをPlayerに合わせ、高さYは現状維持）。開くたびに呼ぶ。
+    private void CenterCameraOnPlayer()
+    {
+        if (minimapCamera == null || player == null) return;
+        Vector3 cam = minimapCamera.transform.position;
+        Vector3 pp = player.transform.position;
+        cam.x = pp.x;
+        cam.z = pp.z;
+        minimapCamera.transform.position = cam;
+    }
+
+    // MinimapDragPanner（パネルに付与）から呼ばれる。ドラッグ量ぶんミニマップカメラを動かす（パン）。
+    //   ・overlayRoot基準のローカル移動量に変換し、カメラのorthographicSizeでワールド移動量へ。
+    //   ・カメラ向きに依存しないよう right/up を使う（真上向きなら right=+X, up=+Z）。
+    //   ・地図をつかんで動かす＝カメラはカーソルと逆向き（invertDragで反転可）。
+    public void OnMinimapDrag(PointerEventData e)
+    {
+        if (!open || minimapCamera == null || overlayRoot == null) return;
+
+        Camera evCam = e.pressEventCamera; // OverlayキャンバスならnullでOK
+        if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(overlayRoot, e.position, evCam, out Vector2 cur)) return;
+        if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(overlayRoot, e.position - e.delta, evCam, out Vector2 prev)) return;
+
+        Vector2 localDelta = cur - prev;
+        Rect r = overlayRoot.rect;
+        if (r.width <= 0f || r.height <= 0f) return;
+
+        float worldH = 2f * minimapCamera.orthographicSize;
+        float worldW = worldH * minimapCamera.aspect;
+        float dx = (localDelta.x / r.width) * worldW;
+        float dz = (localDelta.y / r.height) * worldH;
+
+        float sign = invertDrag ? 1f : -1f; // 通常は逆向き（つかんで動かす）
+        Vector3 move = sign * (dx * minimapCamera.transform.right + dz * minimapCamera.transform.up);
+        minimapCamera.transform.position += move;
+
+        UpdateOverlayPositions();
+    }
+
+    // --- クリック（指示元→派遣先＋数を「追加」で確定し、繰り返し溜める） ---
+    //   ・指示元（自分のBase）をクリック → 全キャンセル（選択も積んだ指示もリセット）。
+    //   ・「追加」で確定。確定済みは編集不可（変えたいならキャンセルしてやり直し）。
     private void HandleBaseClicked(Base b)
     {
-        // 数入力中にBaseをクリックしたら、その指示を取り消す
-        if (pendingDestination != null)
+        // 自分のBase（指示元）クリック＝全キャンセル。編集中・確定済みありでも同じ。
+        if (orderSource != null && b == orderSource)
         {
-            Debug.Log("[Minimap] 発令キャンセル");
+            Debug.Log($"[Minimap] 指示元クリック → キャンセル（リセット）: {b.name}");
             ResetOrderFlow();
             return;
         }
 
+        // 設定中（ある派遣先の数を編集中・未「追加」）
+        if (pendingDestination != null)
+        {
+            if (b == pendingDestination)
+            {
+                // 同じ派遣先＝継続して設定中（何もしない。兵種行はそのまま）。
+                Debug.Log($"[Minimap] 設定中: {b.name}（数を入れて「追加」。別の派遣先で切替、指示元でキャンセル）");
+                return;
+            }
+            if (IsCommitted(b))
+            {
+                Debug.Log($"[Minimap] {b.name} は確定済み（編集不可。やり直すなら指示元クリックでキャンセル）");
+                return;
+            }
+            if (CanBeDestination(orderSource, b))
+            {
+                // 別の派遣先へ切替。設定中だった分は「追加」していないので破棄。
+                Debug.Log($"[Minimap] 派遣先切替: {b.name}（設定中だった分は未追加のため破棄）");
+                pendingDestination = b; ShowQuotaPanel(orderSource, b); UpdateHighlight();
+                return;
+            }
+            if (CanBeSource(b))
+            {
+                Debug.Log($"[Minimap] 指示元変更: {b.name}（指示をリセット）");
+                ResetOrderFlow(); orderSource = b; UpdateHighlight();
+                return;
+            }
+            Debug.Log("[Minimap] 派遣先にできません（指示元に隣接する中立/敵Baseのみ）");
+            return;
+        }
+
+        // 指示元 未選択
         if (orderSource == null)
         {
             if (CanBeSource(b)) { orderSource = b; UpdateHighlight(); Debug.Log($"[Minimap] 指示元: {b.name}"); }
@@ -205,27 +300,32 @@ public class MinimapController : MonoBehaviour
             return;
         }
 
-        if (b == orderSource)
+        // 指示元 選択済み・設定中でない（最初の派遣先選択 or「追加」直後＝次の命令を設定する状態）
+        if (IsCommitted(b))
         {
-            Debug.Log($"[Minimap] 指示元キャンセル: {b.name}");
-            orderSource = null; UpdateHighlight();
+            Debug.Log($"[Minimap] {b.name} は確定済み（編集不可。やり直すなら指示元クリックでキャンセル）");
+            return;
         }
-        else if (CanBeDestination(orderSource, b))
+        if (CanBeDestination(orderSource, b))
         {
-            pendingDestination = b;
-            ShowQuotaPanel(orderSource);
-            Debug.Log($"[Minimap] 指示先: {b.name} → 兵種ごとに数を入れて発令してください");
+            pendingDestination = b; ShowQuotaPanel(orderSource, b); UpdateHighlight();
+            Debug.Log($"[Minimap] 派遣先: {b.name} → 数を入れて「追加」");
+            return;
         }
-        else if (CanBeSource(b))
+        if (CanBeSource(b))
         {
-            orderSource = b; UpdateHighlight();
-            Debug.Log($"[Minimap] 指示元変更: {b.name}");
+            Debug.Log($"[Minimap] 指示元変更: {b.name}（指示をリセット）");
+            ResetOrderFlow(); orderSource = b; UpdateHighlight();
+            return;
         }
-        else Debug.Log("[Minimap] 指示先にできません（指示元に隣接する中立/敵Baseのみ）");
+        Debug.Log("[Minimap] 派遣先にできません（指示元に隣接する中立/敵Baseのみ）");
     }
 
-    // 指示元が生産できる兵種ぶん、行（名前＋−／数／＋）を並べる。すべて常時表示。
-    private void ShowQuotaPanel(Base source)
+    // 既に「追加」して確定済みの派遣先か。
+    private bool IsCommitted(Base b) => pendingOrders.Exists(o => o.target == b);
+
+    // 指示元が生産できる兵種ぶん、行（名前＋−／数／＋）を既定値で並べる。
+    private void ShowQuotaPanel(Base source, Base destination)
     {
         ClearQuotaRows();
         var ai = source != null ? source.GetComponent<BaseAI>() : null;
@@ -239,9 +339,10 @@ public class MinimapController : MonoBehaviour
         if (types == null || types.Count == 0)
         {
             Debug.Log("[Minimap] この指示元は生産できる兵種がありません");
-            ResetOrderFlow();
+            pendingDestination = null; HideQuotaPanel(); UpdateHighlight();
             return;
         }
+
         foreach (var t in types)
         {
             var row = Instantiate(quotaRowPrefab, quotaRowContainer);
@@ -251,26 +352,67 @@ public class MinimapController : MonoBehaviour
         quotaPanel.SetActive(true);
     }
 
-    // 発令ボタン：各行の (兵種, 数) のうち数>0 をまとめて指示元へ渡す。
-    private void OnConfirmQuota()
+    // 「追加」：今の兵種×数を1指示先ぶんとして溜める。数>0が1件も無ければ追加しない。
+    private void OnAddOrder()
     {
-        if (orderSource == null || pendingDestination == null) { ResetOrderFlow(); return; }
+        if (orderSource == null || pendingDestination == null) return;
 
+        var quotas = CollectQuotas();
+        if (quotas.Count == 0)
+        {
+            Debug.Log("[Minimap] 数が全て0です（追加するにはどれか1兵種を1以上に）");
+            return; // パネルは閉じない（入れ直し可）
+        }
+
+        // 同じ派遣先が既にあれば置き換え（再編集）
+        pendingOrders.RemoveAll(o => o.target == pendingDestination);
+        pendingOrders.Add(new BaseAI.DirectedOrder { target = pendingDestination, quotas = quotas });
+
+        Debug.Log($"[Minimap] 追加: {pendingDestination.name} {DescribeQuotas(quotas)}（計{pendingOrders.Count}先）");
+        // 確定したのでこの派遣先は編集不可に（pendingDestination=null）。
+        // 兵種行は表示したまま、数だけ既定値にリセット（次の命令を設定する状態へ）。
+        pendingDestination = null;
+        ResetQuotaRowsToDefault();
+        UpdatePendingSummary();
+        UpdateHighlight();
+    }
+
+    // 兵種行を消さずに数だけ既定値へ戻す（「追加」後・次の命令用）。
+    private void ResetQuotaRowsToDefault()
+    {
+        foreach (var row in quotaRows)
+            if (row != null) row.Setup(row.Type, defaultCount, minCount, maxCount);
+    }
+
+    // 「発令」：これまでに「追加」した指示だけを一括送信する。
+    //   編集中で未「追加」の派遣先は送らない（確定は「追加」のみ）。
+    private void OnConfirmAll()
+    {
+        if (orderSource == null) { ResetOrderFlow(); return; }
+
+        if (pendingDestination != null && !IsCommitted(pendingDestination))
+            Debug.Log($"[Minimap] 設定中の {pendingDestination.name} は未「追加」のため送りません");
+
+        if (pendingOrders.Count == 0)
+        {
+            Debug.Log("[Minimap] 指示が空です（派遣先を「追加」してから発令）");
+            return; // フローは維持（入れ直し可）
+        }
+
+        var ai = orderSource.GetComponent<BaseAI>();
+        if (ai != null) ai.SetDirectedOrders(pendingOrders, orderDuration);
+        Debug.Log($"[Minimap] 発令: {orderSource.name} → {pendingOrders.Count}先（{orderDuration}秒）");
+        ResetOrderFlow();
+    }
+
+    // 兵種行から数>0のものを集める。
+    private List<(MinionData type, int count)> CollectQuotas()
+    {
         var quotas = new List<(MinionData type, int count)>();
         foreach (var row in quotaRows)
             if (row != null && row.Type != null && row.Count > 0)
                 quotas.Add((row.Type, row.Count));
-
-        if (quotas.Count == 0)
-        {
-            Debug.Log("[Minimap] 数が全て0です（どれか1兵種を1以上に）");
-            return; // パネルは閉じない（入れ直し可）
-        }
-
-        var ai = orderSource.GetComponent<BaseAI>();
-        if (ai != null) ai.SetDirectedTarget(pendingDestination, quotas, orderDuration);
-        Debug.Log($"[Minimap] 発令: {orderSource.name} → {pendingDestination.name} {DescribeQuotas(quotas)}（{orderDuration}秒）");
-        ResetOrderFlow();
+        return quotas;
     }
 
     private string DescribeQuotas(List<(MinionData type, int count)> quotas)
@@ -282,6 +424,19 @@ public class MinimapController : MonoBehaviour
             sb.Append(quotas[i].type.name).Append("×").Append(quotas[i].count);
         }
         return sb.ToString();
+    }
+
+    private void UpdatePendingSummary()
+    {
+        if (pendingSummaryLabel == null) return;
+        if (pendingOrders.Count == 0) { pendingSummaryLabel.text = "（指示先なし）"; return; }
+        var sb = new System.Text.StringBuilder();
+        foreach (var o in pendingOrders)
+        {
+            if (sb.Length > 0) sb.Append('\n');
+            sb.Append(o.target != null ? o.target.name : "?").Append(": ").Append(DescribeQuotas(o.quotas));
+        }
+        pendingSummaryLabel.text = sb.ToString();
     }
 
     private void ClearQuotaRows()
@@ -296,12 +451,14 @@ public class MinimapController : MonoBehaviour
         if (quotaPanel != null) quotaPanel.SetActive(false);
     }
 
-    // 指示の途中状態（指示元・指示先・兵種行）を全部リセットする。
+    // 指示の途中状態（指示元・指示先・追加済み・兵種行）を全部リセットする。
     private void ResetOrderFlow()
     {
         orderSource = null;
         pendingDestination = null;
+        pendingOrders.Clear();
         HideQuotaPanel();
+        UpdatePendingSummary();
         UpdateHighlight();
     }
 
@@ -339,7 +496,9 @@ public class MinimapController : MonoBehaviour
         foreach (var (b, marker) in markers)
         {
             if (marker == null) continue;
-            float size = (b == orderSource) ? sel : markerSize;
+            bool isSource = (b == orderSource);
+            bool isPending = (b == pendingDestination) || pendingOrders.Exists(o => o.target == b);
+            float size = (isSource || isPending) ? sel : markerSize;
             marker.rectTransform.sizeDelta = new Vector2(size, size);
         }
     }
@@ -354,23 +513,42 @@ public class MinimapController : MonoBehaviour
         }
     }
 
-    // 指示中のBaseについて、指示元→指示先の矢印（線）を出す。
+    // 発令済み：各Baseの指示中の派遣先ぶん矢印を出す。
+    // 発令前：指示元→追加済み派遣先のプレビュー矢印を別色で出す。
     private void RefreshOrders()
     {
         int idx = 0;
+
         foreach (var (b, _) in markers)
         {
             if (b == null) continue;
             var ai = b.GetComponent<BaseAI>();
-            Base tgt = ai != null ? ai.DirectedTarget : null;
-            if (tgt == null) continue;
-
-            var arrow = GetArrow(idx++);
-            arrow.gameObject.SetActive(true);
-            var img = arrow.GetComponent<Image>();
-            if (img != null) img.color = orderColor;
-            PlaceLine(arrow, WorldToOverlay(b.transform.position), WorldToOverlay(tgt.transform.position));
+            var targets = ai != null ? ai.GetDirectedTargets() : null;
+            if (targets == null) continue;
+            foreach (var tgt in targets)
+            {
+                if (tgt == null) continue;
+                var arrow = GetArrow(idx++);
+                arrow.gameObject.SetActive(true);
+                var img = arrow.GetComponent<Image>();
+                if (img != null) img.color = orderColor;
+                PlaceLine(arrow, WorldToOverlay(b.transform.position), WorldToOverlay(tgt.transform.position));
+            }
         }
+
+        if (orderSource != null)
+        {
+            foreach (var o in pendingOrders)
+            {
+                if (o.target == null) continue;
+                var arrow = GetArrow(idx++);
+                arrow.gameObject.SetActive(true);
+                var img = arrow.GetComponent<Image>();
+                if (img != null) img.color = previewColor;
+                PlaceLine(arrow, WorldToOverlay(orderSource.transform.position), WorldToOverlay(o.target.transform.position));
+            }
+        }
+
         for (int i = idx; i < orderArrows.Count; i++)
             if (orderArrows[i] != null) orderArrows[i].gameObject.SetActive(false);
     }
