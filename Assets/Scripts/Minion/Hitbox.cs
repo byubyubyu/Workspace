@@ -15,6 +15,7 @@ public class Hitbox : MonoBehaviour
     private BoxCollider col;
     private float attackPower;     // 今回の一撃の実威力（Attackが設定）
     private float staggerDuration; // 今回の一撃のひるみ時間（Attackが設定）
+    private GameObject hitEffect;  // 命中時に接触点へ出すエフェクト（Attackが設定）
     private IBattleInfo owner;     // 攻撃する本人（自分を殴らないためのガード用）
     private readonly HashSet<IBattleInfo> hitThisSwing = new HashSet<IBattleInfo>(); // この振りで当てた相手
 
@@ -31,10 +32,11 @@ public class Hitbox : MonoBehaviour
     }
 
     // 判定フェーズ開始時にAttackが呼ぶ：今回の数値を構え、当てた相手リストをクリアしてColliderを有効化。
-    public void Activate(float attackPower, float staggerDuration)
+    public void Activate(float attackPower, float staggerDuration, GameObject hitEffect)
     {
         this.attackPower = attackPower;
         this.staggerDuration = staggerDuration;
+        this.hitEffect = hitEffect;
         hitThisSwing.Clear();
         if (col != null) col.enabled = true;
     }
@@ -57,6 +59,13 @@ public class Hitbox : MonoBehaviour
 
         hitThisSwing.Add(victim);
         victim.TakeDamage(new BattleInfo { attackPower = attackPower, staggerDuration = staggerDuration });
+
+        // 受け手：命中した接触点に hitEffect を出す（ワールド・親なし。ParticleSystemなら自動消滅）。
+        if (hitEffect != null)
+        {
+            Vector3 hitPos = other.ClosestPoint(transform.position); // 相手Collider上の最も近い点＝接触点の目安
+            Instantiate(hitEffect, hitPos, Quaternion.identity);
+        }
     }
 
     private void OnDrawGizmos()

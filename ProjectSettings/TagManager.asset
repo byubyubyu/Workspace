@@ -22,8 +22,8 @@ TagManager:
   - Building
   - Obstacle
   - Ground
-  - 
-  - 
+  - CullBase
+  - CullMinion
   - 
   - 
   - 

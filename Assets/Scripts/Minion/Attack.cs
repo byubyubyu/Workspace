@@ -18,6 +18,8 @@ public class Attack : MonoBehaviour
     private float windupTime;
     private float activeTime;
     private float recoveryTime;
+    private GameObject swingEffect; // 振った瞬間（Active開始）に出す攻撃側エフェクト
+    private GameObject hitEffect;   // 命中時にHitboxが接触点へ出すエフェクト
 
     private Phase phase = Phase.None;
     private float phaseTimer;
@@ -50,6 +52,8 @@ public class Attack : MonoBehaviour
         activeTime = move.activeTime;
         recoveryTime = move.recoveryTime;
         staggerDuration = move.staggerDuration;
+        swingEffect = move.swingEffect;
+        hitEffect = move.hitEffect;
     }
 
     // 立ち回り用に対象を渡す（向き直りに使う）。命中判定自体はHitboxの物理で行う。
@@ -88,8 +92,14 @@ public class Attack : MonoBehaviour
                 {
                     phase = Phase.Active;
                     phaseTimer = 0f;
-                    // 判定フェーズ開始：今回の数値を構え、多段リストclear、Collider有効化
-                    if (hitbox != null) hitbox.Activate(attackPower, staggerDuration);
+                    // 判定フェーズ開始：今回の数値を構え、多段リストclear、Collider有効化。hitEffectもHitboxへ渡す。
+                    if (hitbox != null) hitbox.Activate(attackPower, staggerDuration, hitEffect);
+                    // 攻撃側エフェクト（振った瞬間）。Hitboxの位置・向きに出す（無ければ本体）。当たり外れに関係なく出す。
+                    if (swingEffect != null)
+                    {
+                        Transform at = hitbox != null ? hitbox.transform : transform;
+                        Instantiate(swingEffect, at.position, at.rotation);
+                    }
                 }
                 break;
 

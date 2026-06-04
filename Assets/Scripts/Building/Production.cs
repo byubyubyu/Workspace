@@ -9,6 +9,7 @@ public class Production : MonoBehaviour
 {
     private MinionFactory minionFactory;
     private ProductionStatData productionData;
+    private Construction construction; // 建設完了判定に使う（RequireConstructionで必ず同居）
     private float cooldownTimer;
     public event Action<MinionCore> OnProduced;
 
@@ -16,6 +17,7 @@ public class Production : MonoBehaviour
     {
         productionData = data.Production;
         minionFactory = factory;
+        construction = GetComponent<Construction>();
         cooldownTimer = 0f;
     }
 
@@ -25,12 +27,13 @@ public class Production : MonoBehaviour
             cooldownTimer -= Time.deltaTime;
     }
 
-    // 受付可能か（クールダウン明けか）
-    public bool CanProduce() => cooldownTimer <= 0f;
+    // 受付可能か（クールダウン明け かつ 建設完了済み）。建設中のBarrackは生産しない。
+    public bool CanProduce() => cooldownTimer <= 0f && construction != null && construction.IsCompleted;
 
     // 1匹だけ生産する（コスト判断は呼び出し側=BaseAIが行う）。
     public void ProduceOne(MinionData minionData, Team team, List<Waypoint> waypoints, Base destination)
     {
+        if (construction == null || !construction.IsCompleted) return; // 建設中は生産しない（保険）
         if (!productionData.minionDatas.Contains(minionData)) return;
 
         MinionCore minion = minionFactory.Create(minionData, transform.position);

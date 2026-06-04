@@ -15,6 +15,10 @@ public class AttackMove : ScriptableObject
     public float staggerDuration;      // ひるみ時間（塊2では未使用、塊3で攻撃側がBattleInfoで渡す）
     public float reach;                // AI判断用の間合い目安（実際の当たりはHitboxのColliderサイズ）
 
+    [Header("エフェクト（任意・未設定なら何も出ない。Prefab推奨：ParticleSystemの Stop Action=Destroy で自動消滅）")]
+    public GameObject swingEffect;     // 攻撃側：判定フェーズ開始（振った瞬間）に出す。当たり外れに関係なく出る
+    public GameObject hitEffect;       // 受け手：命中した接触点に出す
+
     // 1回の攻撃サイクルの長さ（オートバトルの攻撃周期に使う）。
     public float TotalTime => windupTime + activeTime + recoveryTime;
 }

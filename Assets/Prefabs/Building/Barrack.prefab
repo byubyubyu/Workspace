@@ -82,6 +82,7 @@ GameObject:
   - component: {fileID: -4943978951485773534}
   - component: {fileID: 6674815301581771692}
   - component: {fileID: 6785768749674041750}
+  - component: {fileID: -3300788370004675751}
   m_Layer: 12
   m_Name: Barrack
   m_TagString: Building
@@ -215,9 +216,21 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GaugeAttacher
   statBarPrefab: {fileID: 6893355925911490379, guid: ae00ed342ae8821429cea71871552600, type: 3}
-  gauges: 00000000
+  gauges: 0000000001000000
   baseHeight: 2
   spacing: 0.25
+--- !u!114 &-3300788370004675751
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3733204543380333294}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f3ec0ebb1c2e8a744aae68e883c9d80f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BuildGaugeSource
 --- !u!1 &7513567838862245446
 GameObject:
   m_ObjectHideFlags: 0
@@ -230,7 +243,7 @@ GameObject:
   - component: {fileID: 2944975030149882044}
   - component: {fileID: 6606405182045302503}
   - component: {fileID: 1992296191519105628}
-  m_Layer: 12
+  m_Layer: 15
   m_Name: Cube
   m_TagString: Untagged
   m_Icon: {fileID: 0}
