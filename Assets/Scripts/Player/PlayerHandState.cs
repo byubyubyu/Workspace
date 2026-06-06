@@ -1,0 +1,176 @@
+// 保存先: Assets/Scripts/Player/PlayerHandState.cs
+// プレイヤーの「手の状態」を管理する司令塔（段階3b：見た目つき）。
+//   状態(HandState)：Empty（手ぶら）/ Weapon（武器構え）/ Item（アイテム所持）。
+//
+//   左クリックの振り分け：
+//     ・インベントリ中      … 何もしない（漁りはBottleDraggerが処理）
+//     ・Item               … 使う → Empty
+//     ・Empty              … 武器を構える(Weapon)→ 攻撃
+//     ・Weapon             … 攻撃（Weaponのまま）
+//
+//   状態遷移：取り出し→Item / インベントリを開く→納刀（WeaponはEmpty、Itemは瓶に戻してEmpty）。
+//   見た目：状態に応じて HandPoint の子モデルを出し分ける。
+//     Weapon → 武器モデル(weaponPrefab) / Item → heldItemのItemData.Prefab / Empty → なし。
+//     状態が変わるたびに今のモデルを消して作り直す（シンプル方式）。
+//     アイテムの手持ちサイズは mapViewSize を流用（手に持つサイズ。必要なら将来専用値を足す）。
+//
+//   （段階3c予定）走る(Shift+移動)で納刀、Weapon中は移動速度ダウン。
+//   入力は新Input Systemで直接読む。攻撃の実体は PlayerCombatCore.TryAttack() に委譲。
+using UnityEngine;
+using UnityEngine.InputSystem;
+
+public class PlayerHandState : MonoBehaviour
+{
+    [SerializeField] private PlayerCombatCore combat;        // 攻撃の実体（TryAttackを呼ぶ）
+    [SerializeField] private BottleUIController bottleUI;    // インベントリ開閉状態の参照（IsOpen）
+    [SerializeField] private Bottle bottle;                 // 取り出しイベントの発生源
+    [SerializeField] private ItemPicker itemPicker;         // 手持ちアイテムを瓶に戻す（PutIntoBottle）
+
+    [Header("見た目")]
+    [SerializeField] private Transform handPoint;           // 武器/アイテムを出す位置（Playerの子）
+    [SerializeField] private GameObject weaponPrefab;       // 武器の見た目（仮でCube等。後で本物に差し替え可）
+
+    private HandState state = HandState.Empty;
+    private ItemData heldItem;        // Item状態のとき手に持っているアイテム
+    private bool prevInventoryOpen;   // インベントリ開閉の「開いた瞬間」検知用
+    private GameObject currentView;   // HandPointに今出ている見た目モデル
+
+    public HandState State => state;
+    public ItemData HeldItem => heldItem;
+
+    private void OnEnable()
+    {
+        if (bottle != null) bottle.OnItemTakenOut += OnItemTakenOut;
+    }
+
+    private void OnDisable()
+    {
+        if (bottle != null) bottle.OnItemTakenOut -= OnItemTakenOut;
+    }
+
+    private void Start()
+    {
+        RefreshView(); // 初期（Empty）＝何も持たない見た目に
+    }
+
+    private void Update()
+    {
+        // インベントリが「開いた瞬間」を検知して納刀処理。
+        bool open = (bottleUI != null && bottleUI.IsOpen);
+        if (open && !prevInventoryOpen)
+        {
+            OnInventoryOpened();
+        }
+        prevInventoryOpen = open;
+
+        var mouse = Mouse.current;
+        if (mouse == null) return;
+
+        if (mouse.leftButton.wasPressedThisFrame)
+        {
+            HandleLeftClick();
+        }
+    }
+
+    private void HandleLeftClick()
+    {
+        // インベントリ中は攻撃も使用もしない（漁り操作はBottleDraggerが別途処理する）。
+        if (bottleUI != null && bottleUI.IsOpen) return;
+
+        switch (state)
+        {
+            case HandState.Item:
+                UseHeldItem();
+                break;
+
+            case HandState.Empty:
+                SetState(HandState.Weapon);       // 構えてから
+                if (combat != null) combat.TryAttack();
+                break;
+
+            case HandState.Weapon:
+                if (combat != null) combat.TryAttack();
+                break;
+        }
+    }
+
+    private void OnItemTakenOut(ItemData data)
+    {
+        if (data == null) return;
+        heldItem = data;
+        SetState(HandState.Item);
+    }
+
+    private void UseHeldItem()
+    {
+        if (heldItem != null) heldItem.Effect?.Use(); // 効果はnull可（中身は将来）
+        heldItem = null;
+        SetState(HandState.Empty);
+    }
+
+    private void OnInventoryOpened()
+    {
+        if (state == HandState.Item && heldItem != null)
+        {
+            if (itemPicker != null) itemPicker.PutIntoBottle(heldItem); // 手持ちを瓶に戻す
+            heldItem = null;
+        }
+        SetState(HandState.Empty); // 納刀
+    }
+
+    // 状態を変え、見た目を更新する（状態変更は必ずここを通す）。
+    private void SetState(HandState next)
+    {
+        if (state == next && currentView != null) return; // 同状態なら作り直さない（Weapon連打で再生成しない）
+        state = next;
+        RefreshView();
+    }
+
+    // 納刀（武器をしまう）。走り出したときにPlayerMovementから呼ばれる。
+    //   Weapon中のみ Empty にする。Item（アイテム所持）中は持ったまま走れるので触らない。
+    public void Sheathe()
+    {
+        if (state == HandState.Weapon) SetState(HandState.Empty);
+    }
+
+    // 状態に応じた見た目を HandPoint に出し分ける（今のを消して作り直す）。
+    private void RefreshView()
+    {
+        // 既存の見た目を消す。
+        if (currentView != null)
+        {
+            Destroy(currentView);
+            currentView = null;
+        }
+
+        if (handPoint == null) return;
+
+        switch (state)
+        {
+            case HandState.Weapon:
+                if (weaponPrefab != null)
+                {
+                    currentView = Instantiate(weaponPrefab, handPoint);
+                    currentView.transform.localPosition = Vector3.zero;
+                    currentView.transform.localRotation = Quaternion.identity;
+                }
+                break;
+
+            case HandState.Item:
+                if (heldItem != null && heldItem.Prefab != null)
+                {
+                    currentView = Instantiate(heldItem.Prefab, handPoint);
+                    currentView.transform.localPosition = Vector3.zero;
+                    currentView.transform.localRotation = Quaternion.identity;
+                    // 手に持つサイズに合わせる（mapViewSizeを流用）。
+                    ItemViewScaler.FitToSize(currentView, heldItem.MapViewSize);
+                }
+                break;
+
+            case HandState.Empty:
+            default:
+                // 何も出さない。
+                break;
+        }
+    }
+}

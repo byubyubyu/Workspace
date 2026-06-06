@@ -52,16 +52,19 @@ public class PlayerCombatCore : MonoBehaviour, IBattleInfo
 
     private void Update()
     {
-        // 攻撃（マウス左）：カメラ前方を向いてから振る（ロックオンなし＝今の向きで命中が決まる）。
-        if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame)
-        {
-            FaceCameraForward();
-            attack.StartAttack();
-        }
-
-        // 回避（スペース）：移動入力方向（カメラ基準）へ。入力が無ければカメラ前方へ。
+        // 攻撃の左クリックは PlayerHandState が司令塔として読み、状態に応じて TryAttack() を呼ぶ。
+        //   （インベントリ中は攻撃しない・アイテム所持中は使う等の振り分けは PlayerHandState が担う）
+        //   回避（スペース）は状態に絡まないのでここで直接読む。
         if (Keyboard.current != null && Keyboard.current.spaceKey.wasPressedThisFrame)
             dodge.StartDodge(DodgeDirection());
+    }
+
+    // 攻撃を試みる（PlayerHandStateから呼ばれる）。カメラ前方を向いてから振る（ロックオンなし）。
+    public void TryAttack()
+    {
+        if (attack == null) return;
+        FaceCameraForward();
+        attack.StartAttack();
     }
 
     // カメラ前方を地面に投影した向き（未設定時は自分の前方）。
