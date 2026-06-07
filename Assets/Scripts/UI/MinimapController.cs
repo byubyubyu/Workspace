@@ -85,7 +85,15 @@ public class MinimapController : MonoBehaviour
     {
         var kb = Keyboard.current;
         if (kb != null && kb[toggleKey].wasPressedThisFrame)
-            SetOpen(!open);
+        {
+            // 商人UI中のMは取引キャンセル→ミニマップを開く（画面の切り替え）。
+            if (MerchantUIController.Instance != null && MerchantUIController.Instance.IsOpen)
+            {
+                MerchantUIController.Instance.Close();
+                SetOpen(true);
+            }
+            else SetOpen(!open);
+        }
 
         if (open)
         {

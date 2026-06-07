@@ -11,6 +11,11 @@ public class ItemData : ScriptableObject, IItemData
     [Header("識別")]
     [SerializeField] private string itemName;
 
+    [Header("通貨")]
+    // 1個あたりの貨幣価値。0＝通貨でない（普通の品）／>0＝お金（コイン等。額面違いは値を変えて作る）。
+    //   所持金＝瓶の中のアイテムの currencyValue 合計、で集計する（次段階）。
+    [SerializeField] private int currencyValue = 0;
+
     [Header("物理の姿")]
     [SerializeField] private ItemShape shape = ItemShape.Box;
     [SerializeField] private Vector2 size = Vector2.one; // Circle:x=直径 / Box・Long:(幅,高さ)
@@ -34,6 +39,7 @@ public class ItemData : ScriptableObject, IItemData
     [SerializeField] private EquipmentData equipment;
 
     public string ItemName => itemName;
+    public int CurrencyValue => currencyValue; // 0＝通貨でない／>0＝お金1個の額面
     public ItemShape Shape => shape;
     public Vector2 Size => size;
     public float Mass => mass;

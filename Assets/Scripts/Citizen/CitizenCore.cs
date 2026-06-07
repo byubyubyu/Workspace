@@ -14,5 +14,9 @@ public class CitizenCore : MonoBehaviour
 
         var wander = GetComponent<Wander>();
         if (wander != null) wander.Initialize(data, homeBase);
+
+        // 商人なら品揃えを配る（Merchantコンポーネントが付いていて、データが商人種別(MerchantData)のとき）。
+        var merchant = GetComponent<Merchant>();
+        if (merchant != null && data is MerchantData md) merchant.Initialize(md);
     }
 }

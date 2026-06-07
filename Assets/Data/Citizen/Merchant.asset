@@ -9,9 +9,19 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: afaa84640e6d90b45b7e68d82e401f7c, type: 3}
+  m_Script: {fileID: 11500000, guid: b1c2d3e4f5a60718293a4b5c6d7e8f90, type: 3}
   m_Name: Merchant
-  m_EditorClassIdentifier: Assembly-CSharp::CitizenData
+  m_EditorClassIdentifier: Assembly-CSharp::MerchantData
   moveSpeed: 2
   wanderInterval: 3
-  prefab: {fileID: 0}
+  prefab: {fileID: 2609530451200212745, guid: 33f4f37bb1f279d4da5e99e037a57f72, type: 3}
+  goods:
+  - item: {fileID: 11400000, guid: aa96cc80a41d869488c5fe57ec335a6e, type: 2}
+    price: 1
+    stock: 5
+  - item: {fileID: 11400000, guid: 2bde8fc2585319a4b96fb1a391258f2e, type: 2}
+    price: 3
+    stock: 1
+  - item: {fileID: 11400000, guid: 1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f60, type: 2}
+    price: 0
+    stock: 10

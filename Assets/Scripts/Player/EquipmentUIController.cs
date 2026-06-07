@@ -61,6 +61,13 @@ public class EquipmentUIController : MonoBehaviour
         var kb = Keyboard.current;
         if (kb != null && kb[toggleKey].wasPressedThisFrame)
         {
+            // 商人UI中のCは取引キャンセル→装備画面を開く（画面の切り替え）。
+            if (MerchantUIController.Instance != null && MerchantUIController.Instance.IsOpen)
+            {
+                MerchantUIController.Instance.Close();
+                Open();
+                return;
+            }
             // ミニマップ（M画面）中のCはMを閉じて、そのまま装備画面を開く（画面の切り替え）。
             if (MinimapController.Instance != null && MinimapController.Instance.IsOpen)
             {

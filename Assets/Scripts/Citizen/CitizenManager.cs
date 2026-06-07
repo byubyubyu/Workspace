@@ -11,7 +11,7 @@ public class CitizenManager : MonoBehaviour
     [SerializeField] private CitizenFactory factory;
     [SerializeField] private CitizenData citizenData; // にぎやかし市民（将来：商人など複数種に拡張）
     [SerializeField] private int count = 3;           // にぎやかし市民の人数（将来：人口リソース化）
-    [SerializeField] private CitizenData merchantData; // 商人（固定・1人）。nullなら商人なし
+    [SerializeField] private MerchantData merchantData; // 商人（固定・1人）。nullなら商人なし。品揃え付きSO
     [SerializeField] private Vector2Int merchantCell;  // 商人の固定位置（Baseのマス座標）
 
     private Base homeBase;

@@ -5,7 +5,7 @@
 //   「拾う」橋渡しはItemPickerが主導する。MapItemCoreは Data を公開するだけで、
 //   自分からは消えない（消滅もItemPickerがDestroyする＝受け身）。
 //
-//   当たり判定：マップ上では形の戦略性は不要なので一律 SphereCollider（簡素）。
+//   当たり判定：マップ上では形の戦略性は不要なので一律 BoxCollider（角があり転がりにくい。簡素）。
 //   見た目：今は単純図形で進める段階。prefab(3Dモデル)があれば子として生成、無ければ何もしない（仮実装）。
 using UnityEngine;
 
@@ -35,10 +35,12 @@ public class MapItemCore : MonoBehaviour
         var rb = GetComponent<Rigidbody>();
         rb.mass = data.Mass;
 
-        // 当たり判定：一律 SphereCollider（簡素）。半径はSizeのxを直径とみなし半分。
-        var col = GetComponent<SphereCollider>();
-        if (col == null) col = gameObject.AddComponent<SphereCollider>();
-        col.radius = Mathf.Max(0.01f, data.Size.x * 0.5f);
+        // 当たり判定：一律 BoxCollider（角があり転がりにくい・簡素）。寸法はSize（幅,高さ）、奥行きは幅と同じ。
+        var col = GetComponent<BoxCollider>();
+        if (col == null) col = gameObject.AddComponent<BoxCollider>();
+        float w = Mathf.Max(0.01f, data.Size.x);
+        float h = Mathf.Max(0.01f, data.Size.y);
+        col.size = new Vector3(w, h, w);
 
         // 見た目（仮実装）：3Dモデルprefabがあれば子として生成。無ければ単純図形のまま。
         if (data.Prefab != null)

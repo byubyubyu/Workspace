@@ -98,6 +98,8 @@ public class PlayerHandState : MonoBehaviour
         if (bottleUI != null && bottleUI.IsOpen) return;
         // ミニマップ（M画面）中も攻撃しない。
         if (MinimapController.Instance != null && MinimapController.Instance.IsOpen) return;
+        // 商人UI中も攻撃しない（売買中の事故を防ぐ。瓶のドラッグはBottleDraggerが処理する）。
+        if (MerchantUIController.Instance != null && MerchantUIController.Instance.IsOpen) return;
 
         switch (state)
         {
@@ -149,6 +151,11 @@ public class PlayerHandState : MonoBehaviour
     private void OnItemTakenOut(ItemData data)
     {
         if (data == null) return;
+
+        // 商人UIが受付中なら、取り出されたアイテムを商人への支払いに使う（手に持たせない）。
+        //   PlayerHandStateより先に商人が消費する＝物理手渡し方式（priceItemと一致すれば累計+1）。
+        var merchant = MerchantUIController.Instance;
+        if (merchant != null && merchant.TryConsumePayment(data)) return;
 
         // 装備品は手に持たず、種別に応じて自動装備する（手持ち＝装備の方針）。外すのは装備UI（クリック）。
         if (data.Equipment != null && equipmentHolder != null)

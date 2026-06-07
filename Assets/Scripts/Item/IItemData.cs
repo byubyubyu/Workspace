@@ -14,4 +14,5 @@ public interface IItemData
     float MapViewSize { get; }    // マップでの見た目の目標サイズ（最大辺・視認性基準）
     float BottleViewSize { get; } // 瓶での見た目の目標サイズ（Sizeの最大辺＝当たり判定に合わせる）
     ItemEffect Effect { get; }    // 使用時の効果（差込口・null可＝効果なし）
+    int CurrencyValue { get; }    // 貨幣価値（0＝通貨でない／>0＝お金1個の額面）
 }

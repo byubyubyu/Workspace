@@ -106,6 +106,14 @@ public class BottleUIController : MonoBehaviour
         if (kb == null) return;
         if (kb[toggleKey].wasPressedThisFrame)
         {
+            // 商人UI中のIは取引キャンセル（途中の払いは戻す）→ 瓶を中央で単独で開き直す。
+            if (MerchantUIController.Instance != null && MerchantUIController.Instance.IsOpen)
+            {
+                MerchantUIController.Instance.Close(); // 取引キャンセル＋瓶も一旦閉じる
+                SetRightHalf(false);
+                OpenBottle();
+                return;
+            }
             // ミニマップ（M画面）中のIはMを閉じて、そのまま瓶を中央で開く（画面の切り替え）。
             if (MinimapController.Instance != null && MinimapController.Instance.IsOpen)
             {

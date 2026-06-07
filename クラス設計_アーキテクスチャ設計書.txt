@@ -527,7 +527,7 @@ O. 要確認・後回し（アイテム）
 
 
 ================================================================
-14. 市民（Citizen）※段階1=にぎやかし市民 実装済み（段階2=商人・段階3=売買 は予定）
+14. 市民（Citizen）※段階1=にぎやかし市民・段階2=商人・段階3=売買（基本フロー）実装済み
 ================================================================
 
   CitizenData(SO)    moveSpeed / wanderInterval / prefab（兵士のMinionDataに相当する非戦闘版）。
@@ -537,7 +537,28 @@ O. 要確認・後回し（アイテム）
   CitizenManager（Base付属）  Base.AnnounceCityhall→BindCityhallでCityhall.OnTeamChangedを購読。
                      自国化で固定数(count)生成／占拠で入れ替え／破壊(None)で消去。完成済みなら購読時に即生成（順序非依存）。
                      将来：人数(Population)リソースで上限管理（Resourceラップ）。
-  Merchant（市民の一種・固定）  話しかけ対象のマーカー（段階3で在庫・価格・売買を持つ）。CitizenManagerがmerchantData/merchantCellで1人生成（Wanderを付けず固定）。
-  MerchantUIController（Player）  商人売買UIの開閉（段階2は枠のみ）。ItemPickerが商人に近づいてEでOpen(merchant)。Current=対象商人。中身は段階3。
+  MerchantData(SO)   CitizenDataを継承（moveSpeed/wanderInterval/prefabを引き継ぐ）。MerchantStockEntry[] goods。
+  MerchantStockEntry 商人の品揃え1件＝品(item) / 支払いアイテム(priceItem) / 支払い個数(priceCount) / 初期在庫(stock)。
+                     priceItemにItemData_Coinを入れれば「コインN枚で買う」、木材を入れれば「木材N個で買う」（物々交換と同じ仕組み）。
+  Merchant（市民の一種・固定）  話しかけ対象＋実行時在庫保持。CitizenCore.InitializeでMerchantDataから品揃えを複製して保持（SO汚染防止）。
+                     Stock（IReadOnlyList公開）／TryConsumeStock（購入確定時の在庫減算API）。CitizenManagerがmerchantData/merchantCellで1人生成（Wanderを付けず固定）。
+  MerchantUIController（Player）  商人売買UIの開閉。ItemPickerが商人に近づいてEでOpen(merchant)。横断参照用にInstance(static)を持つ。
+                     開く時：Merchant.Stockぶんスロットを動的生成→MerchantDisplayにモデル配置／瓶UIも右半分で開く（装備UI流儀）。
+                     「買」押下で受付中スロット(payingEntry)と累計(paidCount)を更新。priceCount==0は即CompletePurchase（無料配布）。
+                     TryConsumePayment(data)：PlayerHandStateから呼ばれる。受付中でpriceItem一致なら累計+1（手に持たせない＝true返す）、priceCount達成でCompletePurchase。
+                     CompletePurchase→DropItemToBottle：瓶開いていればBottleItemFactoryで口の上に生成・Register（リアルタイム）、閉じていればplayerHolder.PendingItems経由。
+                     CancelTransactionRefund：取引キャンセル時の払い戻し。paidCount個のpriceItemをPendingItems固定で戻す
+                     （リアルタイム生成だとClose直後の物理停止前にコインが口から飛び出してマップこぼれする事故が起きるため）。
+                     Update：プレイヤーがCurrent商人から autoCloseRange を超えて離れたら自動Close。
+                     所持金表示：InventoryHolder.Records＋PendingItemsを走査しCurrencyValue合計（Bottle.Itemsは開いてる時しか有効でないので使わない）。
+                     ※ 売買中の制御：PlayerHandState.HandleLeftClick／TPSCamera.LateUpdate がそれぞれ Instance.IsOpen をチェックし、攻撃・マウス視点変更を無効化（移動は別系統で影響なし）。
+                     ※ I/M/C キー：BottleUIController／MinimapController／EquipmentUIController がそれぞれキー処理冒頭で Instance.IsOpen を見て、開いていたら Close（取引キャンセル）→自分を開く。
+  MerchantStockSlot  商人パネルの在庫1件ぶんのスロット（動的生成行）。
+                     itemFrame（売る品の3Dモデル枠）／priceFrame（支払いアイテムの3Dモデル枠）／priceCountLabel／stockLabel／buyButton。
+                     SetPayingState(isPaying, paidCount)：受付中スロットだけpriceCountLabelを「2/5」表示に切替。
+  MerchantDisplay    商人UIの裏空間（装備UIのEquipmentDisplay相当・物理なし）。スロット枠の位置からItemData.Prefabを3Dで生成・配置。専用カメラ→RenderTexture→RawImageで映す。
+  ItemData.currencyValue（拡張） アイテムの貨幣価値（0=通貨でない／>0=お金1個の額面）。お金は専用クラスを作らず普通のアイテムとして物理化（ItemData_Coin）。
   ※ ItemPickerがタグ"Citizen"＋Merchantを近接検知し、最寄りが商人ならEで売買UIを開く（瓶/死体と同じ最寄り判定系統）。
-  ※ 段階3（売買：お金＋物々交換・瓶連携）は予定。
+  ※ 段階3の支払い方式：お金専用処理は作らず、物々交換と同じ仕組みに一本化。商人の受け皿（瓶のドラッグ機構＝瓶からの取り出しを横取り）にpriceItemを渡す＝累計が priceCount に達したら購入成立。
+     コインは priceItem=ItemData_Coin で「コインN枚」、木材は priceItem=ItemData_Wood で「木材N個」と同じ仕組みで表せる。Strategyによる支払い分岐は採らない（過剰）。
+  ※ PlayerHandState.OnItemTakenOut の冒頭で MerchantUIController.Instance.TryConsumePayment を呼び、true なら手に持たない（商人優先）。
