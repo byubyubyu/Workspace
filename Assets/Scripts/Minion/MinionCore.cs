@@ -85,6 +85,10 @@ public class MinionCore : MonoBehaviour, IBattleInfo, IHealth
         var hurtbox = GetComponentInChildren<Hurtbox>(true);
         if (hurtbox != null) hurtbox.SetOwner(this);
 
+        // 初期インベントリ（瓶の中身）を InventoryHolder に渡す（持つ兵士のみ・死体を漁る用）。
+        var holder = GetComponent<InventoryHolder>();
+        if (holder != null) holder.SetInitialItems(data.InitialItems);
+
         states = GetComponents<IState>();
         stateMachine = new StateMachine(states);
         foreach (var state in states)

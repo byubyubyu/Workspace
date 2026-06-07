@@ -9,11 +9,16 @@ public class PlayerMovement : MonoBehaviour, IDasher
     [SerializeField] private float runSpeed = 8f;       // 走り（Shift）
     [SerializeField] private float weaponSpeed = 3f;    // 武器構え中（遅い）
 
+    [Header("向き")]
+    [SerializeField] private float turnSpeed = 180f;    // 移動方向へ向き直る速さ（度/秒）。仮・後調整
+
     [SerializeField] private Transform cameraTransform;
     [SerializeField] private PlayerHandState handState; // 状態参照（武器構えなら遅く／走ると納刀）
+    [SerializeField] private EquipmentHolder equipmentHolder; // 装備の移動速度補正を反映
 
     private CharacterController characterController;
     private Attack attack; // 攻撃中の移動入力ロック判定用
+    private readonly ModifiableStat speedStat = new ModifiableStat(); // 実効移動速度＝状態speed(base)＋装備補正(bonus)
 
     // 回避ダッシュ（IDasher）。Dodge実体が制御する。ダッシュ中は入力移動を止める。
     private bool dashing;
@@ -29,6 +34,26 @@ public class PlayerMovement : MonoBehaviour, IDasher
         attack = GetComponent<Attack>();
         if (cameraTransform == null && Camera.main != null)
             cameraTransform = Camera.main.transform;
+    }
+
+    private void Start()
+    {
+        // 装備の移動速度補正を反映（装備が変わるたび更新）。
+        if (equipmentHolder != null)
+        {
+            equipmentHolder.OnEquipmentChanged += ApplyEquipment;
+            ApplyEquipment();
+        }
+    }
+
+    private void OnDestroy()
+    {
+        if (equipmentHolder != null) equipmentHolder.OnEquipmentChanged -= ApplyEquipment;
+    }
+
+    private void ApplyEquipment()
+    {
+        speedStat.SetBonus(equipmentHolder != null ? equipmentHolder.TotalMoveSpeedBonus : 0f);
     }
 
     private void Update()
@@ -69,9 +94,10 @@ public class PlayerMovement : MonoBehaviour, IDasher
         {
             speed = runSpeed;
         }
-        else if (handState != null && handState.State == HandState.Weapon)
+        else if (handState != null &&
+                 (handState.State == HandState.Weapon || handState.State == HandState.Drawing))
         {
-            speed = weaponSpeed; // 武器構え中は遅い（走っていないとき）
+            speed = weaponSpeed; // 武器構え中・抜刀中は遅い（走っていないとき）
         }
 
         // カメラの向きを地面に投影して移動方向を決める
@@ -81,6 +107,16 @@ public class PlayerMovement : MonoBehaviour, IDasher
         forward.Normalize(); right.Normalize();
 
         Vector3 move = (forward * v + right * h).normalized;
-        characterController.SimpleMove(move * speed);
+
+        // 移動方向へキャラを向ける（MH風。カメラ向きとは独立。攻撃中はこのUpdate冒頭でreturn済み＝今の向き維持）。
+        if (hasInput)
+        {
+            Quaternion target = Quaternion.LookRotation(move);
+            transform.rotation = Quaternion.RotateTowards(transform.rotation, target, turnSpeed * Time.deltaTime);
+        }
+
+        // 実効速度＝状態speed（base）＋装備補正（bonus）。計算はModifiableStatに集約。
+        speedStat.SetBase(speed);
+        characterController.SimpleMove(move * speedStat.Value);
     }
 }

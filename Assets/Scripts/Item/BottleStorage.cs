@@ -31,9 +31,8 @@ public class BottleStorage : MonoBehaviour
     [SerializeField] private Bottle bottle;
     [SerializeField] private BottleItemFactory factory;
 
-    private readonly List<StoredItem> records = new List<StoredItem>();
-
-    public IReadOnlyList<StoredItem> Records => records;
+    // ※ 中身レコード(records)は所有者ごとの InventoryHolder が持つ。
+    //   BottleStorage は「与えられた holder の records を Bottle/Factory で Load/Save する共有の道具」に純化。
 
     public void Initialize(Bottle ownerBottle, BottleItemFactory itemFactory)
     {
@@ -46,14 +45,20 @@ public class BottleStorage : MonoBehaviour
     //   例外：こぼれ中(Spilling)はマップへ向かう途中なので保存対象外（瓶から出る扱い）。
     //   ※ 状態がStoredかどうかで選別すると、静止しているのにStoredになっていないアイテムが
     //     破棄されず残り、次に開いたとき二重になる。それを防ぐため「Spilling以外は全部」とする。
-    public void Save()
+    public void Save(InventoryHolder holder)
     {
         if (bottle == null)
         {
             Debug.LogError($"[BottleStorage] Bottle が未設定です: {name}");
             return;
         }
+        if (holder == null)
+        {
+            Debug.LogError($"[BottleStorage] 記録先 holder が未設定です: {name}");
+            return;
+        }
 
+        var records = holder.Records;
         records.Clear();
 
         // リストはコピーしてから回す（破棄でBottle側のリストが変化するため）。
@@ -76,14 +81,20 @@ public class BottleStorage : MonoBehaviour
     }
 
     // 記録から中身を再生成する（開く時に呼ばれる）。
-    public void Load()
+    public void Load(InventoryHolder holder)
     {
         if (bottle == null || factory == null)
         {
             Debug.LogError($"[BottleStorage] Bottle/Factory が未設定です: {name}");
             return;
         }
+        if (holder == null)
+        {
+            Debug.LogError($"[BottleStorage] 復元元 holder が未設定です: {name}");
+            return;
+        }
 
+        var records = holder.Records;
         for (int i = 0; i < records.Count; i++)
         {
             var rec = records[i];
@@ -106,5 +117,22 @@ public class BottleStorage : MonoBehaviour
             item.MarkStored(); // 復元直後は収納済み（安定状態）として始める
             bottle.Register(item);
         }
+
+        // まだ積んでいない初期アイテム（pendingItems）を口の上から落として積む（案ii）。
+        //   位置はその場の物理で決まる。積んだら pending は空にし、閉じる時の Save で records に焼かれる。
+        var pending = holder.PendingItems;
+        for (int i = 0; i < pending.Count; i++)
+        {
+            var pendData = pending[i];
+            if (pendData == null) continue;
+            // 複数を同時に落とすと重なって弾けるので、口の上で中心揃えに少しずつ横へずらす。
+            float offsetX = (i - (pending.Count - 1) * 0.5f) * 0.3f;
+            Vector3 dropPos = bottle.GetDropPosition() + new Vector3(offsetX, 0f, 0f);
+            BottleItemCore fresh = factory.Create(pendData, dropPos, Quaternion.identity, bottle.transform);
+            if (fresh == null) continue;
+            fresh.Initialize(pendData); // 落下中（Falling）。内側ゾーンに入ると収納済みになる
+            bottle.Register(fresh);
+        }
+        pending.Clear();
     }
 }

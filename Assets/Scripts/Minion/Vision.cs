@@ -36,7 +36,11 @@ public class Vision : MonoBehaviour
                 if (minion == null) continue;
                 if (minion.IsDead) continue;
                 if (minion.Team != team)
+                {
+                    // 視線が障害物（木）に遮られている敵は見えない＝候補にしない
+                    if (IsHiddenByObstacle(minion.Position)) continue;
                     attackCandidates.Add(new TargetCandidate(minion, TargetCategory.Minion));
+                }
             }
             else if (hit.CompareTag("Building"))
             {
@@ -45,6 +49,8 @@ public class Vision : MonoBehaviour
 
                 if (core.Team != team)
                 {
+                    // 視線が障害物（木）に遮られている敵建物は見えない＝候補にしない
+                    if (IsHiddenByObstacle(core.Position)) continue;
                     attackCandidates.Add(new TargetCandidate(core, TargetCategory.Building));
                 }
                 else
@@ -55,6 +61,18 @@ public class Vision : MonoBehaviour
                         buildTarget = construction;
                 }
             }
+            else if (hit.CompareTag("Player"))
+            {
+                // プレイヤー（PlayerCombatCore）。敵Teamなら攻撃候補（優先度は敵兵士の次・敵建物より上）
+                var player = hit.GetComponent<PlayerCombatCore>();
+                if (player == null) continue;
+                if (player.Team != team)
+                {
+                    // 視線が障害物（木）に遮られているプレイヤーは見えない＝候補にしない
+                    if (IsHiddenByObstacle(player.Position)) continue;
+                    attackCandidates.Add(new TargetCandidate(player, TargetCategory.Player));
+                }
+            }
         }
     }
 
@@ -62,4 +80,12 @@ public class Vision : MonoBehaviour
     public List<TargetCandidate> GetAttackCandidates() => attackCandidates;
     public bool HasBuildTarget() => buildTarget != null;
     public Construction GetBuildTarget() => buildTarget;
+
+    // 自分から対象への視線が障害物（木）に遮られているか。
+    //   SightBlocker が無い（シーンに未配置・木なし）場合は遮られていない扱い＝従来どおり見える。
+    private bool IsHiddenByObstacle(Vector3 targetPos)
+    {
+        return SightBlocker.Instance != null
+            && SightBlocker.Instance.IsBlocked(transform.position, targetPos);
+    }
 }

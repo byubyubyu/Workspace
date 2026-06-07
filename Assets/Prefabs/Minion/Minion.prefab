@@ -322,6 +322,8 @@ GameObject:
   - component: {fileID: 563607474644617123}
   - component: {fileID: -2191487800720004664}
   - component: {fileID: 5417401055905281838}
+  - component: {fileID: -5871943590506879596}
+  - component: {fileID: -3211888407368011359}
   m_Layer: 8
   m_Name: Minion
   m_TagString: Minion
@@ -655,6 +657,32 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DeathPoof
   poofPrefab: {fileID: 6188706574630452542, guid: e6db60f30c614164ab0682b0989eaf28, type: 3}
+--- !u!114 &-5871943590506879596
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4377348057659764180}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 499de148c8e986a448a41c52f11dc475, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::InventoryHolder
+  records: []
+--- !u!114 &-3211888407368011359
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4377348057659764180}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 06e6f233397c8ad4db98bf18bcd234a7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CorpseSpawner
+  corpsePrefab: {fileID: 579314626513952238, guid: 2ccd56483d8bd1b45b4f7e5d5070820e, type: 3}
 --- !u!1 &8820842117282034641
 GameObject:
   m_ObjectHideFlags: 0

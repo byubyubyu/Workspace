@@ -25,6 +25,8 @@ public class Attack : MonoBehaviour
     private float phaseTimer;
     private IBattleInfo target; // 立ち回り用の参照（攻撃自体は今の向きに振るので命中には使わない）
     private Dodge dodge;        // 回避中は攻撃不可の判定用（兄弟コンポーネント・無い兵士はnull）
+    private Stamina stamina;    // 攻撃時にスタミナを消費する（兄弟コンポーネント・持たないエンティティはnull）
+    private float staminaCost;  // 1振りで消費するスタミナ（AttackMove由来。0=消費なし）
 
     public float AttackRange => reach;
     public bool IsAttacking => phase != Phase.None;
@@ -37,11 +39,12 @@ public class Attack : MonoBehaviour
         if (hitbox == null) hitbox = GetComponentInChildren<Hitbox>(true);
         if (hitbox != null) hitbox.Setup(GetComponent<IBattleInfo>()); // 兵士=MinionCore / プレイヤー=PlayerCombatCore
         dodge = GetComponent<Dodge>();
+        stamina = GetComponent<Stamina>();
 
         if (data.moves == null || data.moves.Count == 0)
         {
             Debug.LogError($"[Attack] AttackData.moves が空です: {name}");
-            reach = 1f; windupTime = 0.2f; activeTime = 0.1f; recoveryTime = 0.5f; staggerDuration = 0f;
+            reach = 1f; windupTime = 0.2f; activeTime = 0.1f; recoveryTime = 0.5f; staggerDuration = 0f; staminaCost = 0f;
             return;
         }
 
@@ -52,6 +55,7 @@ public class Attack : MonoBehaviour
         activeTime = move.activeTime;
         recoveryTime = move.recoveryTime;
         staggerDuration = move.staggerDuration;
+        staminaCost = move.staminaCost;
         swingEffect = move.swingEffect;
         hitEffect = move.hitEffect;
     }
@@ -67,6 +71,8 @@ public class Attack : MonoBehaviour
     {
         if (IsAttacking) return;
         if (dodge != null && dodge.IsDodging) return; // 回避中は攻撃不可
+        // スタミナを消費できなければ振らない（staminaCost=0なら消費処理ごとスキップ＝回復遅延も入れない）
+        if (staminaCost > 0f && stamina != null && !stamina.Consume(staminaCost)) return;
         phase = Phase.Windup;
         phaseTimer = 0f;
     }

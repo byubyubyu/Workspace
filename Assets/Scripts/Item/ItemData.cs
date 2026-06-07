@@ -30,6 +30,9 @@ public class ItemData : ScriptableObject, IItemData
     [Header("効果（差込口・null可）")]
     [SerializeField] private ItemEffect effect;
 
+    [Header("装備（null可＝非装備品）")]
+    [SerializeField] private EquipmentData equipment;
+
     public string ItemName => itemName;
     public ItemShape Shape => shape;
     public Vector2 Size => size;
@@ -40,4 +43,5 @@ public class ItemData : ScriptableObject, IItemData
     // 瓶での見た目目標サイズ＝Sizeの最大辺（当たり判定に合わせる）。
     public float BottleViewSize => Mathf.Max(size.x, size.y);
     public ItemEffect Effect => effect;
+    public EquipmentData Equipment => equipment; // null＝非装備品
 }

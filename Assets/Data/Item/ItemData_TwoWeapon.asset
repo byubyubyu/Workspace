@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c423ae3e489145743a575650e0d06568, type: 3}
+  m_Name: ItemData_TwoWeapon
+  m_EditorClassIdentifier: Assembly-CSharp::ItemData
+  itemName: TwoHandWeapon
+  shape: 2
+  size: {x: 1, y: 1}
+  mass: 1
+  friction: 0.4
+  prefab: {fileID: 4718251989926145140, guid: e56d1c3d93c1d6041a1f4c99a850ae5f, type: 3}
+  mapViewSize: 1
+  effect: {fileID: 0}
+  equipment: {fileID: 11400000, guid: edbd34a6fc64e464a8e8fd28c86f4ff2, type: 2}

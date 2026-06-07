@@ -387,6 +387,51 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bb7a140dedf60e1438a1db6682b42bb9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Waypoint
+--- !u!1 &240905194
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 240905196}
+  - component: {fileID: 240905195}
+  m_Layer: 5
+  m_Name: BottlePanel
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!222 &240905195
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 240905194}
+  m_CullTransparentMesh: 1
+--- !u!224 &240905196
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 240905194}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 1940519877}
+  m_Father: {fileID: 965420096}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
+  m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &263947427
 GameObject:
   m_ObjectHideFlags: 0
@@ -609,7 +654,7 @@ GameObject:
   - component: {fileID: 321554105}
   - component: {fileID: 321554104}
   m_Layer: 0
-  m_Name: Cube
+  m_Name: HandItem
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -628,7 +673,7 @@ Transform:
   m_LocalScale: {x: 0.3, y: 0.3, z: 0.3}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 2048995310}
+  m_Father: {fileID: 2007314903}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!65 &321554104
 BoxCollider:
@@ -934,6 +979,134 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: c3932a929b5ba2241962f04a2fec6186, type: 3}
+--- !u!1 &425487917
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 425487920}
+  - component: {fileID: 425487918}
+  - component: {fileID: 425487919}
+  m_Layer: 0
+  m_Name: BottleCamera
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!20 &425487918
+Camera:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 425487917}
+  m_Enabled: 1
+  serializedVersion: 2
+  m_ClearFlags: 2
+  m_BackGroundColor: {r: 0.19215687, g: 0.3019608, b: 0.4745098, a: 0}
+  m_projectionMatrixMode: 1
+  m_GateFitMode: 2
+  m_FOVAxisMode: 0
+  m_Iso: 200
+  m_ShutterSpeed: 0.005
+  m_Aperture: 16
+  m_FocusDistance: 10
+  m_FocalLength: 50
+  m_BladeCount: 5
+  m_Curvature: {x: 2, y: 11}
+  m_BarrelClipping: 0.25
+  m_Anamorphism: 0
+  m_SensorSize: {x: 36, y: 24}
+  m_LensShift: {x: 0, y: 0}
+  m_NormalizedViewPortRect:
+    serializedVersion: 2
+    x: 0
+    y: 0
+    width: 1
+    height: 1
+  near clip plane: 0.3
+  far clip plane: 1000
+  field of view: 60
+  orthographic: 1
+  orthographic size: 4
+  m_Depth: 0
+  m_CullingMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_RenderingPath: -1
+  m_TargetTexture: {fileID: 8400000, guid: 0011b6b4ee9592049a22f404bd139da8, type: 2}
+  m_TargetDisplay: 0
+  m_TargetEye: 3
+  m_HDR: 1
+  m_AllowMSAA: 1
+  m_AllowDynamicResolution: 0
+  m_ForceIntoRT: 0
+  m_OcclusionCulling: 1
+  m_StereoConvergence: 10
+  m_StereoSeparation: 0.022
+--- !u!114 &425487919
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 425487917}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a79441f348de89743a2939f4d699eac1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Runtime::UnityEngine.Rendering.Universal.UniversalAdditionalCameraData
+  m_RenderShadows: 1
+  m_RequiresDepthTextureOption: 2
+  m_RequiresOpaqueTextureOption: 2
+  m_CameraType: 0
+  m_Cameras: []
+  m_RendererIndex: -1
+  m_VolumeLayerMask:
+    serializedVersion: 2
+    m_Bits: 1
+  m_VolumeTrigger: {fileID: 0}
+  m_VolumeFrameworkUpdateModeOption: 2
+  m_RenderPostProcessing: 0
+  m_Antialiasing: 0
+  m_AntialiasingQuality: 2
+  m_StopNaN: 0
+  m_Dithering: 0
+  m_ClearDepth: 1
+  m_AllowXRRendering: 1
+  m_AllowHDROutput: 1
+  m_UseScreenCoordOverride: 0
+  m_ScreenSizeOverride: {x: 0, y: 0, z: 0, w: 0}
+  m_ScreenCoordScaleBias: {x: 0, y: 0, z: 0, w: 0}
+  m_RequiresDepthTexture: 0
+  m_RequiresColorTexture: 0
+  m_TaaSettings:
+    m_Quality: 3
+    m_FrameInfluence: 0.1
+    m_JitterScale: 1
+    m_MipBias: 0
+    m_VarianceClampScale: 0.9
+    m_ContrastAdaptiveSharpening: 0
+  m_Version: 2
+--- !u!4 &425487920
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 425487917}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 1000, y: 3, z: -10}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &463545960
 GameObject:
   m_ObjectHideFlags: 0
@@ -2656,7 +2829,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &965420096
 RectTransform:
   m_ObjectHideFlags: 0
@@ -2670,6 +2843,7 @@ RectTransform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1100364168}
+  - {fileID: 240905196}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -3131,7 +3305,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1100364168
 RectTransform:
   m_ObjectHideFlags: 0
@@ -3491,6 +3665,61 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1907401220}
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1300901158
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1300901160}
+  - component: {fileID: 1300901159}
+  m_Layer: 0
+  m_Name: Bottle
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1300901159
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1300901158}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cf4833d1334e26e4b85b68d47491cc2b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Bottle
+  data: {fileID: 11400000, guid: 7d405eb61e9d8e841ab3d0ce8a8dac9a, type: 2}
+  wallThickness: 1
+  wallSprite: {fileID: 0}
+  wallColor: {r: 0.5, g: 0.35, b: 0.2, a: 1}
+  wallSortingOrder: 0
+  backgroundSprite: {fileID: 0}
+  backgroundColor: {r: 0.15, g: 0.12, b: 0.1, a: 1}
+  backgroundSortingOrder: -10
+  backgroundZ: 0.5
+  dropHeightMargin: 1
+  restVelocityThreshold: 0.05
+--- !u!4 &1300901160
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1300901158}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 1000, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1301036061
@@ -4212,6 +4441,169 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bb7a140dedf60e1438a1db6682b42bb9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Waypoint
+--- !u!1 &1586582114
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1586582122}
+  - component: {fileID: 1586582121}
+  - component: {fileID: 1586582120}
+  - component: {fileID: 1586582119}
+  - component: {fileID: 1586582118}
+  - component: {fileID: 1586582117}
+  - component: {fileID: 1586582116}
+  - component: {fileID: 1586582115}
+  m_Layer: 0
+  m_Name: InventorySystem
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1586582115
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1586582114}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 38a6c1e1d973bd044be9ec572f9f87de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::InventorySystem
+  bottle: {fileID: 1300901159}
+  bottleData: {fileID: 11400000, guid: 7d405eb61e9d8e841ab3d0ce8a8dac9a, type: 2}
+  storage: {fileID: 1586582120}
+  bottleItemFactory: {fileID: 1586582117}
+  mapItemFactory: {fileID: 1586582118}
+  fixedSpawner: {fileID: 1586582116}
+--- !u!114 &1586582116
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1586582114}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ab8a9f15a3699be4f8a971211d2457b0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FixedItemSpawner
+  mapItemFactory: {fileID: 1586582118}
+  placements:
+  - data: {fileID: 11400000, guid: aa96cc80a41d869488c5fe57ec335a6e, type: 2}
+    position: {x: 3, y: 12, z: 0}
+  - data: {fileID: 11400000, guid: aa96cc80a41d869488c5fe57ec335a6e, type: 2}
+    position: {x: 5, y: 12, z: 0}
+  - data: {fileID: 11400000, guid: aa96cc80a41d869488c5fe57ec335a6e, type: 2}
+    position: {x: 8, y: 12, z: 0}
+  - data: {fileID: 11400000, guid: aa96cc80a41d869488c5fe57ec335a6e, type: 2}
+    position: {x: 8, y: 12, z: 0}
+  - data: {fileID: 11400000, guid: aa96cc80a41d869488c5fe57ec335a6e, type: 2}
+    position: {x: 8, y: 12, z: 0}
+  - data: {fileID: 11400000, guid: aa96cc80a41d869488c5fe57ec335a6e, type: 2}
+    position: {x: 8, y: 12, z: 0}
+  - data: {fileID: 11400000, guid: aa96cc80a41d869488c5fe57ec335a6e, type: 2}
+    position: {x: 8, y: 12, z: 0}
+  - data: {fileID: 11400000, guid: aa96cc80a41d869488c5fe57ec335a6e, type: 2}
+    position: {x: 8, y: 12, z: 0}
+  - data: {fileID: 11400000, guid: aa96cc80a41d869488c5fe57ec335a6e, type: 2}
+    position: {x: 8, y: 12, z: 0}
+--- !u!114 &1586582117
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1586582114}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 99d300aff8d03da49aead1c6bff86622, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BottleItemFactory
+  baseItemPrefab: {fileID: 5174556305712418703, guid: f9c70ddfc78eb2a47853ba0895030829, type: 3}
+--- !u!114 &1586582118
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1586582114}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5c802ac377c2c8f479bc0608f6a9499f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MapItemFactory
+  baseItemPrefab: {fileID: 3918433961149259471, guid: d73ba048a7ec8d64296a9064edb37c02, type: 3}
+--- !u!114 &1586582119
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1586582114}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b91da7e06a21144468207de148886942, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BottleDragger
+  bottleCamera: {fileID: 425487918}
+  bottleViewRect: {fileID: 1940519877}
+  jointFrequency: 1
+  jointDampingRatio: 1.5
+--- !u!114 &1586582120
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1586582114}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9b6a7d422f285104ab58ffa276662ea1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BottleStorage
+  bottle: {fileID: 1300901159}
+  factory: {fileID: 1586582117}
+--- !u!114 &1586582121
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1586582114}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b74de14726394334480a86a9611200ed, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BottleUIController
+  bottlePanel: {fileID: 240905194}
+  bottleCamera: {fileID: 425487918}
+  bottle: {fileID: 1300901159}
+  storage: {fileID: 1586582120}
+  dragger: {fileID: 1586582119}
+  toggleKey: 23
+  closeTimeout: 3
+--- !u!4 &1586582122
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1586582114}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 614.4783, y: -0.00003, z: -435.2636}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1592610645
 GameObject:
   m_ObjectHideFlags: 0
@@ -5210,7 +5602,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &1907401220
 Transform:
   m_ObjectHideFlags: 0
@@ -5430,6 +5822,78 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1940519876
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1940519877}
+  - component: {fileID: 1940519879}
+  - component: {fileID: 1940519878}
+  m_Layer: 5
+  m_Name: BottleView
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &1940519877
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1940519876}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 240905196}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 400, y: 400}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &1940519878
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1940519876}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1344c3c82d62a2a41a3576d8abb8e3ea, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.RawImage
+  m_Material: {fileID: 0}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_RaycastTarget: 1
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  m_Texture: {fileID: 8400000, guid: 0011b6b4ee9592049a22f404bd139da8, type: 2}
+  m_UVRect:
+    serializedVersion: 2
+    x: 0
+    y: 0
+    width: 1
+    height: 1
+--- !u!222 &1940519879
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1940519876}
+  m_CullTransparentMesh: 1
 --- !u!1 &1950833322
 GameObject:
   m_ObjectHideFlags: 0
@@ -5550,6 +6014,8 @@ GameObject:
   - component: {fileID: 2007314906}
   - component: {fileID: 2007314905}
   - component: {fileID: 2007314904}
+  - component: {fileID: 2007314908}
+  - component: {fileID: 2007314909}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -5569,8 +6035,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d841237ea0a36954a8e7f2f6cf493aae, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerMovement
-  moveSpeed: 10
+  moveSpeed: 6
+  runSpeed: 10
+  weaponSpeed: 3
   cameraTransform: {fileID: 0}
+  handState: {fileID: 2007314909}
 --- !u!143 &2007314902
 CharacterController:
   m_ObjectHideFlags: 0
@@ -5611,6 +6080,7 @@ Transform:
   m_Children:
   - {fileID: 2048995310}
   - {fileID: 796245495}
+  - {fileID: 321554103}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &2007314904
@@ -5667,6 +6137,44 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Attack
   hitbox: {fileID: 796245493}
+--- !u!114 &2007314908
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2007314900}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 936c1f53171745d4b9d7a913202fb83d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ItemPicker
+  bottle: {fileID: 1300901159}
+  bottleUI: {fileID: 1586582121}
+  bottleItemFactory: {fileID: 1586582117}
+  mapItemFactory: {fileID: 1586582118}
+  pickupRange: 2
+  pickupKey: 19
+  spillScatterRadius: 1
+  spillSpawnHeight: 1
+--- !u!114 &2007314909
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2007314900}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 139cd2aa9b058ba49bd866ee591d733e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerHandState
+  combat: {fileID: 2007314904}
+  bottleUI: {fileID: 1586582121}
+  bottle: {fileID: 1300901159}
+  itemPicker: {fileID: 2007314908}
+  handPoint: {fileID: 321554103}
+  weaponPrefab: {fileID: 4718251989926145140, guid: e56d1c3d93c1d6041a1f4c99a850ae5f, type: 3}
 --- !u!1 &2048995309
 GameObject:
   m_ObjectHideFlags: 0
@@ -5698,8 +6206,7 @@ Transform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 321554103}
+  m_Children: []
   m_Father: {fileID: 2007314903}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!136 &2048995311
@@ -6063,3 +6570,6 @@ SceneRoots:
   - {fileID: 1113171867}
   - {fileID: 1950833325}
   - {fileID: 393592963}
+  - {fileID: 1300901160}
+  - {fileID: 425487920}
+  - {fileID: 1586582122}

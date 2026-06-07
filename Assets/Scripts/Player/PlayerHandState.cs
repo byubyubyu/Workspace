@@ -5,10 +5,14 @@
 //   左クリックの振り分け：
 //     ・インベントリ中      … 何もしない（漁りはBottleDraggerが処理）
 //     ・Item               … 使う → Empty
-//     ・Empty              … 武器を構える(Weapon)→ 攻撃
+//     ・Empty              … 抜刀（Drawingへ。攻撃はしない）
+//     ・Drawing            … 何もしない（抜刀中の隙）
 //     ・Weapon             … 攻撃（Weaponのまま）
 //
-//   状態遷移：取り出し→Item / インベントリを開く→納刀（WeaponはEmpty、Itemは瓶に戻してEmpty）。
+//   抜刀：Emptyで左クリック→Drawing（drawDuration秒の隙。攻撃不可・移動が遅い）→経過後Weapon。
+//     抜刀中は走り(Sheathe)・回避(CancelDraw)でキャンセルしてEmptyへ。
+//
+//   状態遷移：取り出し→Item / インベントリを開く→納刀（Weapon/DrawingはEmpty、Itemは瓶に戻してEmpty）。
 //   見た目：状態に応じて HandPoint の子モデルを出し分ける。
 //     Weapon → 武器モデル(weaponPrefab) / Item → heldItemのItemData.Prefab / Empty → なし。
 //     状態が変わるたびに今のモデルを消して作り直す（シンプル方式）。
@@ -25,15 +29,22 @@ public class PlayerHandState : MonoBehaviour
     [SerializeField] private BottleUIController bottleUI;    // インベントリ開閉状態の参照（IsOpen）
     [SerializeField] private Bottle bottle;                 // 取り出しイベントの発生源
     [SerializeField] private ItemPicker itemPicker;         // 手持ちアイテムを瓶に戻す（PutIntoBottle）
+    [SerializeField] private EquipmentHolder equipmentHolder; // 装備の脱着（仮キー・段階1）
 
     [Header("見た目")]
     [SerializeField] private Transform handPoint;           // 武器/アイテムを出す位置（Playerの子）
     [SerializeField] private GameObject weaponPrefab;       // 武器の見た目（仮でCube等。後で本物に差し替え可）
 
+    [Header("抜刀")]
+    [SerializeField] private float drawDuration = 1f;       // 抜刀にかかる時間＝隙（秒）。仮・後調整
+    [SerializeField] private GameObject drawEffect;         // 抜刀時のエフェクト（任意・null可）
+    [SerializeField] private AudioClip drawSound;           // 抜刀音（任意・null可）
+
     private HandState state = HandState.Empty;
     private ItemData heldItem;        // Item状態のとき手に持っているアイテム
     private bool prevInventoryOpen;   // インベントリ開閉の「開いた瞬間」検知用
     private GameObject currentView;   // HandPointに今出ている見た目モデル
+    private float drawTimer;          // 抜刀の残り時間（Drawing中のみ使用）
 
     public HandState State => state;
     public ItemData HeldItem => heldItem;
@@ -41,11 +52,13 @@ public class PlayerHandState : MonoBehaviour
     private void OnEnable()
     {
         if (bottle != null) bottle.OnItemTakenOut += OnItemTakenOut;
+        if (equipmentHolder != null) equipmentHolder.OnEquipmentChanged += OnEquipmentChanged;
     }
 
     private void OnDisable()
     {
         if (bottle != null) bottle.OnItemTakenOut -= OnItemTakenOut;
+        if (equipmentHolder != null) equipmentHolder.OnEquipmentChanged -= OnEquipmentChanged;
     }
 
     private void Start()
@@ -62,6 +75,13 @@ public class PlayerHandState : MonoBehaviour
             OnInventoryOpened();
         }
         prevInventoryOpen = open;
+
+        // 抜刀中はタイマーを進め、満了で武器構え(Weapon)へ移る。
+        if (state == HandState.Drawing)
+        {
+            drawTimer -= Time.deltaTime;
+            if (drawTimer <= 0f) SetState(HandState.Weapon);
+        }
 
         var mouse = Mouse.current;
         if (mouse == null) return;
@@ -84,8 +104,11 @@ public class PlayerHandState : MonoBehaviour
                 break;
 
             case HandState.Empty:
-                SetState(HandState.Weapon);       // 構えてから
-                if (combat != null) combat.TryAttack();
+                StartDraw();                      // 抜刀のみ（攻撃はしない）
+                break;
+
+            case HandState.Drawing:
+                // 抜刀中は何もしない（隙）。
                 break;
 
             case HandState.Weapon:
@@ -94,9 +117,52 @@ public class PlayerHandState : MonoBehaviour
         }
     }
 
+    // 抜刀を開始する（Empty左クリック）。Drawingに入り、タイマーと演出を起動する。
+    //   抜刀中(Drawing)は武器を見せず手ぶらのまま。武器はWeaponになってから出す（RefreshView）。
+    private void StartDraw()
+    {
+        if (!HasWeapon()) return; // 武器が無ければ抜刀できない（技がないと構えても攻撃できないため）
+        SetState(HandState.Drawing);
+        drawTimer = drawDuration;
+
+        if (drawEffect != null && handPoint != null)
+            Instantiate(drawEffect, handPoint.position, handPoint.rotation);
+        if (drawSound != null)
+            AudioSource.PlayClipAtPoint(drawSound, transform.position);
+    }
+
+    // 装備が変わったとき：武器が無くなったら納刀する（Weapon/Drawingを解除）。
+    private void OnEquipmentChanged()
+    {
+        if (!HasWeapon() && (state == HandState.Weapon || state == HandState.Drawing))
+            SetState(HandState.Empty);
+    }
+
+    // 武器を装備しているか（右手に武器の技セットがあるか）。
+    private bool HasWeapon()
+    {
+        return equipmentHolder != null && equipmentHolder.GetWeaponAttack() != null;
+    }
+
     private void OnItemTakenOut(ItemData data)
     {
         if (data == null) return;
+
+        // 装備品は手に持たず、種別に応じて自動装備する（手持ち＝装備の方針）。外すのは装備UI（クリック）。
+        if (data.Equipment != null && equipmentHolder != null)
+        {
+            equipmentHolder.Equip(data);
+            return;
+        }
+
+        // 手が既に埋まっている（アイテム所持中）なら手に取れない＝マップに落とす（手は1個・上書き消失を防ぐ）。
+        //   「手以外で口の外に出たらマップ」の仕様に沿う。死体の瓶でも同じ。
+        if (state == HandState.Item || heldItem != null)
+        {
+            if (itemPicker != null) itemPicker.DropToMap(data);
+            return;
+        }
+
         heldItem = data;
         SetState(HandState.Item);
     }
@@ -127,10 +193,18 @@ public class PlayerHandState : MonoBehaviour
     }
 
     // 納刀（武器をしまう）。走り出したときにPlayerMovementから呼ばれる。
-    //   Weapon中のみ Empty にする。Item（アイテム所持）中は持ったまま走れるので触らない。
+    //   Weapon・Drawing のどちらも Empty にする（走ると武器をしまう＝抜刀中なら抜刀キャンセル）。
+    //   Item（アイテム所持）中は持ったまま走れるので触らない。
     public void Sheathe()
     {
-        if (state == HandState.Weapon) SetState(HandState.Empty);
+        if (state == HandState.Weapon || state == HandState.Drawing) SetState(HandState.Empty);
+    }
+
+    // 抜刀キャンセル（回避時にPlayerCombatCoreから呼ばれる）。
+    //   抜刀中(Drawing)のみ Empty に戻す。武器構え(Weapon)中は構えたまま回避できるよう触らない。
+    public void CancelDraw()
+    {
+        if (state == HandState.Drawing) SetState(HandState.Empty);
     }
 
     // 状態に応じた見た目を HandPoint に出し分ける（今のを消して作り直す）。
@@ -147,6 +221,7 @@ public class PlayerHandState : MonoBehaviour
 
         switch (state)
         {
+            // Drawing（抜刀中）は武器を出さない＝手ぶらのまま（defaultに落ちる）。抜き終わってWeaponで出す。
             case HandState.Weapon:
                 if (weaponPrefab != null)
                 {

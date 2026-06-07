@@ -2,6 +2,6 @@
 public enum TargetCategory
 {
     Minion,   // 敵兵士（優先度1位）
-    Building,  // 敵建物（優先度2位）
-    // 将来: Player
+    Player,   // プレイヤー（優先度2位）。敵Teamのプレイヤーを攻撃対象にする
+    Building,  // 敵建物（優先度3位）
 }

@@ -96,6 +96,8 @@ GameObject:
   - component: {fileID: 4500472250103956402}
   - component: {fileID: 8892366847908390404}
   - component: {fileID: -5894833859806512785}
+  - component: {fileID: 5097095963770062072}
+  - component: {fileID: 5222900267881099050}
   m_Layer: 8
   m_Name: Tank
   m_TagString: Minion
@@ -417,6 +419,32 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DeathPoof
   poofPrefab: {fileID: 6188706574630452542, guid: e6db60f30c614164ab0682b0989eaf28, type: 3}
+--- !u!114 &5097095963770062072
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4448055481436346494}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 499de148c8e986a448a41c52f11dc475, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::InventoryHolder
+  records: []
+--- !u!114 &5222900267881099050
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4448055481436346494}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 06e6f233397c8ad4db98bf18bcd234a7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CorpseSpawner
+  corpsePrefab: {fileID: 579314626513952238, guid: 2ccd56483d8bd1b45b4f7e5d5070820e, type: 3}
 --- !u!1 &6845094150348722668
 GameObject:
   m_ObjectHideFlags: 0

@@ -8,6 +8,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: -9007750850387140965, guid: e3d7885ce9a810f44be9bbf1a4e1843f, type: 3}
+      propertyPath: m_Layer
+      value: 13
+      objectReference: {fileID: 0}
     - target: {fileID: -8846588312278835647, guid: e3d7885ce9a810f44be9bbf1a4e1843f, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
@@ -60,14 +64,34 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: 5450fe6b5f5af6e4c99a365d96935ac6, type: 2}
+    - target: {fileID: -7157084977492938520, guid: e3d7885ce9a810f44be9bbf1a4e1843f, type: 3}
+      propertyPath: m_Layer
+      value: 13
+      objectReference: {fileID: 0}
     - target: {fileID: -6956109395853621246, guid: e3d7885ce9a810f44be9bbf1a4e1843f, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: 9233e2518ec831f4b977f823ab2a830b, type: 2}
+    - target: {fileID: -6753034854349275699, guid: e3d7885ce9a810f44be9bbf1a4e1843f, type: 3}
+      propertyPath: m_Layer
+      value: 13
+      objectReference: {fileID: 0}
+    - target: {fileID: -6632252932453673551, guid: e3d7885ce9a810f44be9bbf1a4e1843f, type: 3}
+      propertyPath: m_Layer
+      value: 13
+      objectReference: {fileID: 0}
+    - target: {fileID: -6393966049807554157, guid: e3d7885ce9a810f44be9bbf1a4e1843f, type: 3}
+      propertyPath: m_Layer
+      value: 13
+      objectReference: {fileID: 0}
     - target: {fileID: -5833666163602850324, guid: e3d7885ce9a810f44be9bbf1a4e1843f, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: 9233e2518ec831f4b977f823ab2a830b, type: 2}
+    - target: {fileID: -4008575906305537280, guid: e3d7885ce9a810f44be9bbf1a4e1843f, type: 3}
+      propertyPath: m_Layer
+      value: 13
+      objectReference: {fileID: 0}
     - target: {fileID: -3631130338327745878, guid: e3d7885ce9a810f44be9bbf1a4e1843f, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
@@ -108,14 +132,58 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: b04c48f9a93c3504db4e07eec1d84284, type: 2}
+    - target: {fileID: -869454788725422164, guid: e3d7885ce9a810f44be9bbf1a4e1843f, type: 3}
+      propertyPath: m_Layer
+      value: 13
+      objectReference: {fileID: 0}
+    - target: {fileID: -633248257367100661, guid: e3d7885ce9a810f44be9bbf1a4e1843f, type: 3}
+      propertyPath: m_Layer
+      value: 13
+      objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: e3d7885ce9a810f44be9bbf1a4e1843f, type: 3}
       propertyPath: m_Name
       value: Chestnut_2
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: e3d7885ce9a810f44be9bbf1a4e1843f, type: 3}
+      propertyPath: m_Layer
+      value: 13
+      objectReference: {fileID: 0}
+    - target: {fileID: 1776192822054049718, guid: e3d7885ce9a810f44be9bbf1a4e1843f, type: 3}
+      propertyPath: m_Layer
+      value: 13
+      objectReference: {fileID: 0}
+    - target: {fileID: 2603596351399455266, guid: e3d7885ce9a810f44be9bbf1a4e1843f, type: 3}
+      propertyPath: m_Layer
+      value: 13
+      objectReference: {fileID: 0}
+    - target: {fileID: 2741874129161956708, guid: e3d7885ce9a810f44be9bbf1a4e1843f, type: 3}
+      propertyPath: m_Layer
+      value: 13
+      objectReference: {fileID: 0}
+    - target: {fileID: 3046478036038972481, guid: e3d7885ce9a810f44be9bbf1a4e1843f, type: 3}
+      propertyPath: m_Layer
+      value: 13
+      objectReference: {fileID: 0}
+    - target: {fileID: 5439874970715466619, guid: e3d7885ce9a810f44be9bbf1a4e1843f, type: 3}
+      propertyPath: m_Layer
+      value: 13
       objectReference: {fileID: 0}
     - target: {fileID: 5564532054556809848, guid: e3d7885ce9a810f44be9bbf1a4e1843f, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: 5450fe6b5f5af6e4c99a365d96935ac6, type: 2}
+    - target: {fileID: 6138561571350823801, guid: e3d7885ce9a810f44be9bbf1a4e1843f, type: 3}
+      propertyPath: m_Layer
+      value: 13
+      objectReference: {fileID: 0}
+    - target: {fileID: 7176169502357505911, guid: e3d7885ce9a810f44be9bbf1a4e1843f, type: 3}
+      propertyPath: m_Layer
+      value: 13
+      objectReference: {fileID: 0}
+    - target: {fileID: 7376496261587751481, guid: e3d7885ce9a810f44be9bbf1a4e1843f, type: 3}
+      propertyPath: m_Layer
+      value: 13
+      objectReference: {fileID: 0}
     - target: {fileID: 8550838101829016408, guid: e3d7885ce9a810f44be9bbf1a4e1843f, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
@@ -123,5 +191,36 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: e3d7885ce9a810f44be9bbf1a4e1843f, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: -2323973010497546237}
   m_SourcePrefab: {fileID: 100100000, guid: e3d7885ce9a810f44be9bbf1a4e1843f, type: 3}
+--- !u!1 &6126850985237547240 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: e3d7885ce9a810f44be9bbf1a4e1843f, type: 3}
+  m_PrefabInstance: {fileID: 6469310172989437369}
+  m_PrefabAsset: {fileID: 0}
+--- !u!136 &-2323973010497546237
+CapsuleCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6126850985237547240}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Radius: 0.5
+  m_Height: 1
+  m_Direction: 1
+  m_Center: {x: 0, y: 0, z: 0}

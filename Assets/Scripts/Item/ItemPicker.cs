@@ -19,12 +19,14 @@ public class ItemPicker : MonoBehaviour
     [Header("拾う検知")]
     [SerializeField] private float pickupRange = 2f;
     [SerializeField] private Key pickupKey = Key.E;
+    [SerializeField] private float corpseCloseRange = 3f; // 開いている死体からこれ以上離れたら自動で閉じる（pickupRangeより大きめ＝ちらつき防止）
 
     [Header("こぼれをマップに戻すときの散らばり")]
     [SerializeField] private float spillScatterRadius = 1f;
     [SerializeField] private float spillSpawnHeight = 1f; // プレイヤー頭上から落とす高さ
 
     private MapItemCore nearest;
+    private Corpse nearestCorpse; // 最寄りの死体（Eで開いて漁る対象）
     private static readonly Collider[] hits = new Collider[16];
 
     // 将来の演出（拾える物を光らせる等）のために最寄りを公開。
@@ -44,36 +46,93 @@ public class ItemPicker : MonoBehaviour
     {
         RefreshNearest();
 
+        // 開いている死体から離れたら自動で閉じる（自分の瓶は対象外）。
+        AutoCloseDistantCorpse();
+
         var kb = Keyboard.current;
         if (kb != null && kb[pickupKey].wasPressedThisFrame)
         {
-            TryPickup();
+            TryInteract();
         }
     }
 
-    // 周囲を3D検知し、タグ"Item"の最寄りMapItemCoreを把握する。
+    // 開いている対象が死体で、一定距離(corpseCloseRange)以上離れたら瓶UIを閉じる。
+    private void AutoCloseDistantCorpse()
+    {
+        if (bottleUI == null || !bottleUI.IsOpen) return;
+        var holder = bottleUI.CurrentHolder;
+        if (holder == null) return;
+        if (holder.GetComponent<Corpse>() == null) return; // 死体でなければ（自分の瓶など）対象外
+        float distSq = (holder.transform.position - transform.position).sqrMagnitude;
+        if (distSq > corpseCloseRange * corpseCloseRange) bottleUI.CloseBottle();
+    }
+
+    // 周囲を3D検知し、タグ"Item"の最寄りMapItemCoreと、タグ"Corpse"の最寄りCorpseを把握する。
     private void RefreshNearest()
     {
         nearest = null;
-        float best = float.MaxValue;
+        nearestCorpse = null;
+        float bestItem = float.MaxValue;
+        float bestCorpse = float.MaxValue;
 
         int count = Physics.OverlapSphereNonAlloc(transform.position, pickupRange, hits);
         for (int i = 0; i < count; i++)
         {
             var col = hits[i];
             if (col == null) continue;
-            if (!col.CompareTag("Item")) continue;
 
-            var item = col.GetComponentInParent<MapItemCore>();
-            if (item == null) continue;
-
-            float d = (item.transform.position - transform.position).sqrMagnitude;
-            if (d < best)
+            if (col.CompareTag("Item"))
             {
-                best = d;
-                nearest = item;
+                var item = col.GetComponentInParent<MapItemCore>();
+                if (item == null) continue;
+                float d = (item.transform.position - transform.position).sqrMagnitude;
+                if (d < bestItem) { bestItem = d; nearest = item; }
+            }
+            else if (col.CompareTag("Corpse"))
+            {
+                var corpse = col.GetComponentInParent<Corpse>();
+                if (corpse == null) continue;
+                float d = (corpse.transform.position - transform.position).sqrMagnitude;
+                if (d < bestCorpse) { bestCorpse = d; nearestCorpse = corpse; }
             }
         }
+    }
+
+    // E押下時の処理。
+    //   ・瓶UIを開いていない時：最寄りが死体なら開く、アイテムなら拾う（近い方を優先）。
+    //   ・死体を開いている時：移動で最寄りが別の死体に変わっていたら、その死体に開き直す。
+    private void TryInteract()
+    {
+        // 既に瓶UIが開いている場合の扱い。
+        if (bottleUI != null && bottleUI.IsOpen)
+        {
+            var openHolder = bottleUI.CurrentHolder;
+            bool viewingCorpse = openHolder != null && openHolder.GetComponent<Corpse>() != null;
+            if (viewingCorpse)
+            {
+                // 死体を漁い中：最寄りが別の死体なら開き直す（拾いはしない）。
+                if (nearestCorpse != null && nearestCorpse.Holder != openHolder)
+                {
+                    bottleUI.CloseBottle();
+                    bottleUI.OpenBottle(nearestCorpse.Holder);
+                }
+                return;
+            }
+            // 自分の瓶（装備画面など）を開いている時：マップのアイテムは拾える（右の瓶に入る）。死体は無視。
+            if (nearest != null) TryPickup();
+            return;
+        }
+
+        // 瓶を開いていない時：近い方を開く/拾う。
+        float itemDist = nearest != null ? (nearest.transform.position - transform.position).sqrMagnitude : float.MaxValue;
+        float corpseDist = nearestCorpse != null ? (nearestCorpse.transform.position - transform.position).sqrMagnitude : float.MaxValue;
+
+        if (nearestCorpse != null && corpseDist <= itemDist)
+        {
+            if (bottleUI != null) bottleUI.OpenBottle(nearestCorpse.Holder);
+            return;
+        }
+        if (nearest != null) TryPickup();
     }
 
     // 最寄りを拾う：瓶を開く→瓶に生成して入れる→マップの実体を破棄。
@@ -84,8 +143,12 @@ public class ItemPicker : MonoBehaviour
         ItemData data = nearest.Data;
         if (data == null) return;
 
-        // 瓶UIを自動で開く（収納の様子を見せる）。
-        if (bottleUI != null) bottleUI.OpenBottle();
+        // 瓶UIを自動で開く（収納の様子を見せる）。閉じていて新規に開く時は中央に（装備画面の右寄せを引きずらない）。
+        if (bottleUI != null)
+        {
+            if (!bottleUI.IsOpen) bottleUI.SetRightHalf(false);
+            bottleUI.OpenBottle();
+        }
 
         // 瓶に入れる（共通処理）。
         PutIntoBottle(data);
@@ -118,6 +181,12 @@ public class ItemPicker : MonoBehaviour
 
     // こぼれたアイテムをプレイヤー周囲にMapItemCoreとして戻す（再取得可能）。
     private void OnSpilled(ItemData data)
+    {
+        DropToMap(data);
+    }
+
+    // アイテムをプレイヤー周囲のマップに落とす（こぼれ／手が埋まって取り出しを受け取れない時など）。
+    public void DropToMap(ItemData data)
     {
         if (data == null || mapItemFactory == null) return;
 

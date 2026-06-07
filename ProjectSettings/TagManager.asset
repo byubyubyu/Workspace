@@ -6,6 +6,9 @@ TagManager:
   tags:
   - Building
   - Minion
+  - Item
+  - Player
+  - Corpse
   layers:
   - Default
   - TransparentFX
@@ -24,8 +27,8 @@ TagManager:
   - Ground
   - CullBase
   - CullMinion
-  - 
-  - 
+  - Item
+  - EquipmentView
   - 
   - 
   - 

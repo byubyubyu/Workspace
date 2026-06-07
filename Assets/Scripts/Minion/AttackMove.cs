@@ -14,6 +14,7 @@ public class AttackMove : ScriptableObject
     public float recoveryTime;         // 後隙
     public float staggerDuration;      // ひるみ時間（塊2では未使用、塊3で攻撃側がBattleInfoで渡す）
     public float reach;                // AI判断用の間合い目安（実際の当たりはHitboxのColliderサイズ）
+    public float staminaCost;          // 1振りで消費するスタミナ（0=消費なし。兵士/プレイヤーごとにSOで設定）
 
     [Header("エフェクト（任意・未設定なら何も出ない。Prefab推奨：ParticleSystemの Stop Action=Destroy で自動消滅）")]
     public GameObject swingEffect;     // 攻撃側：判定フェーズ開始（振った瞬間）に出す。当たり外れに関係なく出る

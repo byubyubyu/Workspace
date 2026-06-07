@@ -12,4 +12,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bdd8a6c4d7159e3429f58385ae32523e, type: 3}
   m_Name: MovementData_Minion
   m_EditorClassIdentifier: Assembly-CSharp::MovementData
-  moveSpeed: 4
+  moveSpeed: 2

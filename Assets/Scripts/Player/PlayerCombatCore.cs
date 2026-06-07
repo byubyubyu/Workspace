@@ -13,14 +13,18 @@ using UnityEngine.InputSystem;
 public class PlayerCombatCore : MonoBehaviour, IBattleInfo
 {
     [SerializeField] private Team team = Team.Red;      // プレイヤーの所属（同Teamは殴らない）
-    [SerializeField] private AttackData attackData;
+    [SerializeField] private float baseDefense;         // 素の防御力（装備補正と合算。プレイヤーは現状被ダメnoopなので将来用）
     [SerializeField] private DodgeData dodgeData;
     [SerializeField] private StaminaData staminaData;
     [SerializeField] private Transform cameraTransform; // 攻撃の向き・回避方向の基準（未設定ならCamera.main）
+    [SerializeField] private PlayerHandState handState;  // 回避時に抜刀をキャンセルする（任意）
+    [SerializeField] private EquipmentHolder equipmentHolder; // 装備の武器/防御を反映する
 
     private Attack attack;
     private Dodge dodge;
     private Stamina stamina;
+    private readonly ModifiableStat defense = new ModifiableStat(); // 実効防御力＝base＋装備補正（将来TakeDamageで使用）
+    private bool hasWeapon; // 武器を装備中か（武器なし＝技が無く攻撃不可）
 
     // --- IBattleInfo ---
     public Vector3 Position => transform.position;
@@ -43,11 +47,41 @@ public class PlayerCombatCore : MonoBehaviour, IBattleInfo
         if (staminaData != null) stamina.Initialize(staminaData, team);
         else Debug.LogError($"[PlayerCombatCore] StaminaData未設定: {name}");
 
-        if (attackData != null) attack.Initialize(attackData);
-        else Debug.LogError($"[PlayerCombatCore] AttackData未設定: {name}");
-
+        // 攻撃(Attack)は武器装備時に初期化する（武器なし＝技が無く攻撃不可）。ここでは初期化しない。
         if (dodgeData != null) dodge.Initialize(dodgeData);
         else Debug.LogError($"[PlayerCombatCore] DodgeData未設定: {name}");
+
+        // 装備の反映（武器→技・防御力補正）。装備が変わるたび再反映する。
+        defense.SetBase(baseDefense);
+        if (equipmentHolder != null)
+        {
+            equipmentHolder.OnEquipmentChanged += ApplyEquipment;
+            ApplyEquipment(); // 初期状態を反映（初期は武器なし＝攻撃不可）
+        }
+    }
+
+    private void OnDestroy()
+    {
+        if (equipmentHolder != null) equipmentHolder.OnEquipmentChanged -= ApplyEquipment;
+    }
+
+    // 装備に応じて武器（技）と防御力補正を反映する。
+    private void ApplyEquipment()
+    {
+        // 武器：右手の武器の技セットでAttackを初期化。無ければ攻撃不可。
+        AttackData weapon = equipmentHolder != null ? equipmentHolder.GetWeaponAttack() : null;
+        if (weapon != null)
+        {
+            attack.Initialize(weapon);
+            hasWeapon = true;
+        }
+        else
+        {
+            hasWeapon = false;
+        }
+
+        // 防御力補正（プレイヤーは現状被ダメnoopなので実効は将来）。
+        defense.SetBonus(equipmentHolder != null ? equipmentHolder.TotalDefenseBonus : 0f);
     }
 
     private void Update()
@@ -56,14 +90,17 @@ public class PlayerCombatCore : MonoBehaviour, IBattleInfo
         //   （インベントリ中は攻撃しない・アイテム所持中は使う等の振り分けは PlayerHandState が担う）
         //   回避（スペース）は状態に絡まないのでここで直接読む。
         if (Keyboard.current != null && Keyboard.current.spaceKey.wasPressedThisFrame)
+        {
+            if (handState != null) handState.CancelDraw(); // 抜刀中なら回避でキャンセル
             dodge.StartDodge(DodgeDirection());
+        }
     }
 
-    // 攻撃を試みる（PlayerHandStateから呼ばれる）。カメラ前方を向いてから振る（ロックオンなし）。
+    // 攻撃を試みる（PlayerHandStateから呼ばれる）。向きは変えず、今キャラが向いている方向に振る（MH風・ロックオンなし）。
     public void TryAttack()
     {
         if (attack == null) return;
-        FaceCameraForward();
+        if (!hasWeapon) return; // 武器なし＝技が無いので攻撃できない
         attack.StartAttack();
     }
 
@@ -73,12 +110,6 @@ public class PlayerCombatCore : MonoBehaviour, IBattleInfo
         if (cameraTransform == null) return transform.forward;
         Vector3 f = cameraTransform.forward; f.y = 0f;
         return f.sqrMagnitude > 0.0001f ? f.normalized : transform.forward;
-    }
-
-    private void FaceCameraForward()
-    {
-        Vector3 f = CameraForward();
-        if (f.sqrMagnitude > 0.0001f) transform.rotation = Quaternion.LookRotation(f);
     }
 
     // 移動入力（カメラ基準）から回避方向を作る。入力が無ければカメラ前方。

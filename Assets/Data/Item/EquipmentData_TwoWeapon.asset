@@ -1,0 +1,18 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 03ac83695a2327844b69199119d2267b, type: 3}
+  m_Name: EquipmentData_TwoWeapon
+  m_EditorClassIdentifier: Assembly-CSharp::EquipmentData
+  equipType: 1
+  defenseBonus: 0
+  moveSpeedBonus: 0
+  weaponAttack: {fileID: 11400000, guid: f53218bd1948156418343cb59a20bac1, type: 2}

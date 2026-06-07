@@ -21,3 +21,5 @@ MonoBehaviour:
   dodge: {fileID: 11400000, guid: 7fb73d3b242dc5747b1d11fdcc321975, type: 2}
   productionCost: 20
   prefab: {fileID: 4377348057659764180, guid: 1c45165531bd9c948af344d4f27b8c98, type: 3}
+  initialItems:
+  - {fileID: 11400000, guid: aa96cc80a41d869488c5fe57ec335a6e, type: 2}

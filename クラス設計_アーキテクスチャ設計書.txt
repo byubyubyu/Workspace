@@ -1,0 +1,523 @@
+================================================================
+クラス設計・アーキテクチャ設計書
+================================================================
+
+※ この文書は「現時点の最新の確定状態」を表す。過去の経緯や追記履歴は残さず、
+  今の正しい姿だけを記載する。クラス名・フィールドは現コードに合わせる。
+  未実装の新要素（アイテム）はセクション13にまとめ、その旨を明記する。
+
+
+----------------------------------------------------------------
+1. 設計方針
+----------------------------------------------------------------
+
+アーキテクチャ
+  - コンポーネント指向
+  - データ（ScriptableObject）と振る舞い（MonoBehaviour）の分離
+  - 依存の方向を一方向にする（疎結合）
+  - 必要なものは引数で渡す（DI：Dependency Injection）
+  - RequireComponentで依存コンポーネントを自動追加する
+
+イベントと問い合わせの使い分け
+  - 遠いモジュールへの「起きたことの通知」 → イベント（Observer）
+      OnDestroyed、OnCompleted、OnTeamChanged、OnArrived、OnProduced 等
+  - 同じ兵士内の状態判定（敵がいるか、建設対象があるか等） → 毎フレームの問い合わせ（プル型）
+      Visionが検出結果を保持し、State／StateMachineが問い合わせる
+  ※ どちらも依存は一方向に保つ。同じGameObject上の兄弟コンポーネント間の参照は疎結合を崩さない
+
+使用デザインパターン
+  - Facade        BaseAI、InventorySystem
+  - Factory       BuildingFactory、MinionFactory、MapItemFactory、BottleItemFactory（生成のみ）
+  - Strategy      BuildStrategy、BuildingPriorityData、ターゲット選定、戦闘判断、アイテム効果
+  - State         MinionのStateMachine（各StateはMonoBehaviour。優先度＋毎フレーム条件評価）
+  - Observer      イベント（OnDestroyed、OnCompleted、OnTeamChanged等の遠隔通知）
+  - DI            引数で必要なものを渡す
+
+
+----------------------------------------------------------------
+2. GameObject構成
+----------------------------------------------------------------
+
+【World】
+  World（GameObject）
+  ├── World（コンポーネント）：List<Base> bases / List<Path> paths（Inspectorでアサイン）
+  │     # Gizmoは各Base（格子）・各Path（経路）が自身で描く
+  ├── GameManager（コンポーネント）：World world（Inspectorでアサイン）
+  │     # 初期配置は各BaseAIのinitialBuildingsがデータ駆動で動的生成する
+  └── SightBlocker（コンポーネント）：Awakeで全Terrainの木を集め視線遮蔽を構築（Instanceで参照・シーンに1個）
+        # 木による視線遮蔽の判定サービス（詳細はセクション4・視線遮蔽）
+
+【Base（土地）】
+  Base（GameObject）
+  ├── Base（コンポーネント）
+  │     ├── List<Path> paths / Vector2Int gridSize / float cellSize（Inspectorでアサイン）
+  │     ├── GridToWorld(Vector2Int)   # マス座標→ワールド座標（マス中心を返す）
+  │     ├── AnnounceCityhall(cityhall) # 自分のCityhall生成時に隣接Baseへ購読させる
+  │     ├── SubscribeNeighborCityhall(neighbor, cityhall) # 隣のOnTeamChangedを購読しTeam更新（分散型）
+  │     └── OnDrawGizmos              # 格子線を描く
+  ├── BaseAI（Facadeパターン）
+  │     ├── Team team / List<BuildingPriorityData> buildingPriorities / CityhallData cityhallData
+  │     ├── List<InitialBuilding> initialBuildings（マス座標＋データ＋startCompleted＋startCost）
+  │     ├── PlaceBuilding(data, cell, team, startCompleted, startCost)：生成経路の一本化
+  │     ├── DecideBuilding：払える＆上限未満＆空きセルありで足切り、basePriority最大を1個(argmax)
+  │     ├── DecideMinion：種類ランダム1種、数min〜max、コストが続く範囲でまとめて生産
+  │     ├── 派遣先選定（Barrackごと）：攻撃用→中立/敵にランダム、補給用→味方（将来）
+  │     ├── RequestOccupation → 戻り値 BuildingCore（無し:生成して返す/自国未完成:それを返す/他:null）
+  │     ├── プレイヤー指令（DirectedOrder）：target＋quotas。SetDirectedOrders(list, duration)で一括上書き。
+  │     │     DecideMinion（指令中）は順番充足。directedTimerで寿命管理。GetProducibleMinions()で候補提示
+  │     ├── InitializeNeighborTeams # 起動時に隣接BaseのTeamを直接読む
+  │     └── Dictionary<Base, Team> neighborTeams # 以降のTeam変化はイベントで更新
+  ├── BuildingManager
+  │     ├── Dictionary<Vector2Int, BuildingCore> buildings / グリッド空き状況管理（GridManager廃止）
+  │     ├── CountByType(BuildingType) / Vector2Int gridSize
+  │     └── DestroyAllBuildings（Cityhall破壊時の全消滅）
+  └── MinionManager
+        ├── List<MinionCore> minions / AddMinion / 死亡時に除外
+        # 登録：BaseAIがProduction.OnProducedを購読しAddMinion。生成はProductionがMinionFactoryで行う
+
+【Path（道）】
+  Path（GameObject）
+  └── Path：List<Base> connectedBases / List<Waypoint> waypoints / float speedMultiplier / OnDrawGizmos
+
+【Player（プレイヤー）】
+  Player（GameObject）
+  ├── PlayerMovement   # 移動（CharacterController、WASD/矢印・カメラ基準、新Input System、IDasher）
+  │                    #   速度（歩き/走り=Shift/武器構え・抜刀中=遅い）。走るとPlayerHandState.Sheathe()で納刀
+  │                    #   移動入力方向へキャラがスムーズに向く（turnSpeed。カメラ向きと独立＝MH風）
+  ├── PlayerCombatCore # アクション戦闘の薄いCore（IBattleInfo。Attack/Dodge/Stamina）
+  │                    #   RequireComponentでAttack/Dodge/Stamina自動追加。被ダメは当面noop
+  │                    #   攻撃の左クリック読みは持たず、TryAttack()公開（PlayerHandStateが司令塔）。回避(スペース)は自前
+  │                    #   TryAttack()は今キャラが向いている方向に振る（カメラ向きへは向き直さない＝MH風）
+  ├── PlayerHandState  # 手の状態管理（司令塔）。HandState：Empty/Drawing/Weapon/Item
+  │                    #   左クリックを状態で振り分け（手ぶら→抜刀/抜刀中→何もしない/武器構え→攻撃/アイテム所持→使う/インベントリ中→何もしない）
+  │                    #   抜刀：Empty左クリックでDrawingへ。drawDuration秒の隙（攻撃不可・移動遅い）後にWeaponへ。抜刀と攻撃は別アクション
+  │                    #   演出：抜刀時にdrawEffect生成・drawSound再生（任意・null可）。抜刀中は手ぶらのまま、武器はWeaponで出す
+  │                    #   取り出し(Bottle.OnItemTakenOut)で手に持つ。インベントリ開くと納刀（手持ちはItemPicker.PutIntoBottleで瓶に戻す）
+  │                    #   Sheathe()公開（走るとWeapon/Drawingを納刀）／CancelDraw()公開（回避でDrawingのみキャンセル）
+  │                    #   状態に応じHandPointに武器/アイテムのモデルを出し分け（見た目）
+  ├── HandPoint        # 武器/アイテムを出す位置（空GameObject。PlayerHandStateが参照）
+  ├── TPSCamera        # カメラ追従（右ドラッグ回転・ホイールズーム。Mouse.current）
+  ├── ItemPicker       # アイテム拾得＋マップ⇔瓶の橋渡し（セクション13・実装済み）
+  └── CharacterController # RequireComponentで自動追加
+
+【Minimap（UI）】※実装済み
+  Canvas配下：MinimapController / MinimapMarker / MinimapQuotaRow / MinimapTypeButton / MinimapDragPanner
+  - 俯瞰オルソカメラ→RenderTexture→RawImage。WorldToViewportPointで位置同期。開いている間だけ有効
+  - 指示元→派遣先→兵種ごとの数→「追加」→「発令」でBaseAI.SetDirectedOrdersに渡す
+  - 視野外マーカー非表示、Path線・矢印はoverlayRootのMaskで枠クリップ
+
+【ゲージUI】※実装済み
+  StatBar（種別GaugeTypeに対応するIGaugeSourceを表示・外枠=国色/fill=緑/頭上ビルボード）
+  GaugeAttacher（Prefabから生成し種別指定）
+  供給元：HpGaugeSource（IHealth）/ BuildGaugeSource（Construction）/ StaminaGaugeSource
+
+
+----------------------------------------------------------------
+3. 建物（Building）
+----------------------------------------------------------------
+
+【Cityhall】
+  ├── CityhallBehavior（RequireComponentで以下自動追加）
+  │     ├── 破壊時：BuildingManager.DestroyAllBuildingsで同土地の建物を全消滅、OnTeamChanged=Team.None
+  │     └── 完成時：Construction.OnCompletedを購読し完成した瞬間にTeam発火
+  ├── BuildingCore（自動追加）
+  │     ├── HP管理（Health）／Team Team（プロパティ）／IBattleInfo・IHealth実装
+  │     ├── HP0で OnDestroyed＋Destroy(gameObject)（destroyedガード付き）
+  │     └── 同建物の各コンポーネント（Construction/CostPool/CityhallBehavior等）をまとめて初期設定
+  │           （GetComponentで取得しInitialize。種類を名指ししない。MinionCoreと対称）
+  ├── Construction（自動追加）
+  │     ├── Resource＋BuildStrategy＋完成。IsCompleted / IsManual / CompleteImmediately / Add / OnCompleted
+  └── CostPool（自動追加）
+        └── Resource＋時間回復＋複数Barrack共有。Initialize(max, speed, startCurrent)
+
+  # 占拠時の未完成Cityhall：中立の土地でBaseAIが生成。生成時に占拠要求兵士のTeamを設定。
+  #   Builderが建設ポイントを渡し、完成でOnTeamChanged発火→土地が自国化
+
+【Barrack】
+  ├── Production（RequireComponentで以下自動追加）
+  │     ├── BaseAIから指示を受ける（MinionData、Team、Waypoint、行き先Baseを引数で受け取る）
+  │     ├── MinionFactoryで生成（生成のみ）。生成後の初期設定はMinionCoreに依頼
+  │     ├── CanProduce()＝クールダウン明け かつ Construction.IsCompleted（建設中は生産しない）
+  │     └── OnProducedイベント発火
+  ├── BuildingCore（自動追加）：上記と同様
+  └── Construction（自動追加）：AutoBuildStrategy（時間経過で建設ポイント加算）
+
+
+----------------------------------------------------------------
+4. 兵士（Minion）
+----------------------------------------------------------------
+
+【Minion / Tank 共通】
+  Minion（GameObject）
+  ├── MinionCore（IBattleInfo, IHealth）
+  │     ├── HP管理（Health）／防御力（VitalityData.defense）／Team
+  │     ├── 【生成時】各コンポーネント（Movement/Vision/Attack/Builder/Stamina/Dodge）に
+  │     │      対応SOを流し込む（GetComponentで取得・名指ししない。コンポーネント基準でSO欠けを検出）
+  │     ├── 子のHurtboxに自分(IBattleInfo)を渡す（SetOwner）
+  │     ├── GetComponents<IState>で全Stateを自動取得・初期化
+  │     ├── Updateで vision.Refresh() → stateMachine.Update() の順に駆動（更新順保証）
+  │     ├── TakeDamage：DamageCalculatorで計算しHP減。staggerDuration>0ならStagger.Apply
+  │     ├── Die()：OnDestroyed発火＋即Destroy
+  │     └── NotifyArrived()：OnArrived発火（帰還／占拠の起点）
+  ├── Movement（MovingStateのRequireComponent）
+  │     ├── NavMeshAgent（RequireComponent）。moveSpeedをAgent.speedに。List<Waypoint>を順に辿る
+  │     ├── Chase/StopHere/ResumeWaypoint（追尾モード）。combatControlled（BeginCombat/EndCombat）
+  │     │     戦闘中はWaypoint処理をしない（近接即Attack時の引き戻し不具合対策）
+  │     ├── MoveTo(pos)：占拠用。IDasher（Dodgeのダッシュ）
+  ├── Vision（CombatState・BuildingStateのRequireComponent）
+  │     ├── visionRange。Refresh()で毎フレーム Physics.OverlapSphere し結果保持
+  │     ├── タグ"Minion"/"Building"/"Player"で種別、Teamで敵味方。候補（対象＋カテゴリ）を保持
+  │     │     プレイヤー＝敵Teamの PlayerCombatCore を TargetCategory.Player で候補化（視線遮蔽も適用）
+  │     ├── 自国の建設対象＝自国かつ未完成かつManual（Construction.IsManual）
+  │     ├── 破壊済み(偽null)・死亡済み(IsDead)は除外。問い合わせ用メソッドで返す（イベント発火しない）
+  │     └── 視線遮蔽：敵候補は SightBlocker.Instance.IsBlocked で木に遮られていれば除外（SightBlocker未配置なら従来どおり）
+  ├── Attack（CombatState・PlayerCombatCoreのRequireComponent。プレイヤー/兵士共通）
+  │     ├── Initialize(AttackData)。StartAttack()でWindup→Active→Recoveryを自走（タイマー）
+  │     │     StartAttack冒頭でStamina消費（AttackMove.staminaCost>0のとき。不足なら振らない）。回避中も不可
+  │     ├── Active開始でHitbox.Activate＋swingEffect生成、Active終了でDeactivate
+  │     ├── IsAttacking / CanCancel(Recovery) / ForceCancel / SetTarget
+  ├── Hitbox（子・RequireComponent BoxCollider・isTrigger）
+  │     ├── Active中だけCollider有効。Activate(attackPower, staggerDuration, hitEffect)
+  │     └── OnTriggerEnterで相手Hurtbox.Owner(IBattleInfo)へTakeDamage。多段ヒット防止・自分/味方除外
+  │         命中接触点にhitEffect生成
+  ├── Hurtbox（子）：Owner(IBattleInfo)を保持（SetOwner）。i-frame中はcollider無効化
+  ├── Dodge（MonoBehaviour）：DodgeData。i-frame＝Hurtbox無効化。IDasherでMovementにダッシュ指示
+  ├── Stamina（MonoBehaviour）：StaminaData。消費・時間回復・recoveryDelay
+  ├── Stagger（MonoBehaviour）：Apply(duration)（再適用はmax）。IsStaggered
+  ├── Builder（BuildingStateのRequireComponent）：SetConstructionで渡された対象に建設ポイント
+  ├── Occupier（攻撃用兵士のみ）
+  │     ├── 派遣時に「行き先のBase」を受け取り保持。中立Base到着でBaseAIへ占拠要求
+  │     ├── RequestOccupationの戻り(未完成Cityhall)位置へMovement.MoveToで寄る
+  │     └── 自国→Die、敵国→何もしない（戦闘側が攻撃）。兵士は建物を生成しない
+  ├── SpawnPop：生成時ポップイン（easeOutBack）。自己完結
+  ├── DeathPoof：MinionCore.OnDestroyed購読→死亡位置にポッフPrefab生成（Core無改造）
+  ├── CorpseSpawner：MinionCore.OnDestroyed購読→死亡位置に死体(Corpse)を生成し中身を移譲（Core無改造・DeathPoof型。セクション13）
+  └── InventoryHolder：瓶の中身を持つ（死亡時にCorpseへ移譲）。任意（持つ兵士のみ）。MinionCoreが初期アイテムを配る
+
+【StateMachine】各StateはMonoBehaviour。MinionCoreがGetComponents<IState>で取得・初期化
+  DeadState      # 最優先。HP0。MinionCoreのRequireComponent
+  StaggerState   # 高優先・割り込み。ひるみ中。※正確な優先度値は要確認
+  CombatState    # 敵発見。Vision・AttackのRequireComponent。Chaseで追尾指揮、戦闘判断はICombatStrategy
+  BuildingState  # 建設対象発見。Vision・BuilderのRequireComponent。current完成でMinionCore.Die
+  MovingState    # 基本状態。MovementのRequireComponent
+
+  状態選択：各Stateが CanEnter() を判定し、StateMachineが有効な状態のうち最高優先度を毎フレーム選ぶ
+    DeadState=HP0 / StaggerState=ひるみ中 / CombatState=視界に敵 / BuildingState=視界に自国建設対象 /
+    MovingState=常に有効
+
+【ターゲット選定】
+  TargetCandidate（target:IBattleInfo ＋ category:TargetCategory）
+  TargetCategory（enum）：Minion（優先1）/ Player（優先2）/ Building（優先3）
+  ITargetingStrategy：IBattleInfo SelectTarget(候補リスト, 現在のターゲット)
+  PriorityTargetingStrategy（初期実装）：現ターゲット有効なら維持、上位カテゴリ出現で乗り換え、
+    同カテゴリ内では乗り換えない。将来：スコアリング型に差し替え
+
+【戦闘判断（接近・攻撃を仕掛ける対象選び）】
+  ICombatStrategy：戦闘時の振る舞いを差し替え
+  DumbCombatStrategy（初期）：愚直に近づいて振る・回避しない。賢いAIは将来差し替え（賢さは非対称）
+  CombatContext / CombatAction：戦闘の文脈・行動の表現
+
+【視線遮蔽（SightBlocker）】※実装済み
+  SightBlocker（MonoBehaviour・シーンに1個。Instanceで参照＝横断的な環境サービス）
+    ├── Awakeで全TerrainのtreeInstancesから木（XZ中心＋半径）を集め、空間グリッドを構築
+    ├── IsBlocked(from, to)：XZ平面の線分×円判定。線分AABB±maxRadiusのセルだけ走査（大量対応）
+    ├── 物理コライダー非依存（Terrain Treeのコライダーは近傍動的生成で離れたRaycastに乗らないため）
+    └── Visionが敵候補ごとに問い合わせ、遮られた相手を候補から除外（建設対象は対象外・高さ無視の2D）
+  ※ 見た目はTerrain Treeのまま（描画最適化）。判定だけSightBlockerが持つ＝見た目と判定の分離
+  ※ 移動ブロックは別系統：兵士＝NavMeshベイク／プレイヤー＝Terrain Treeコライダー（密着で停止）
+
+
+----------------------------------------------------------------
+5. ScriptableObject
+----------------------------------------------------------------
+
+【建物データ】
+  IBuildingData：Stat / Prefab / Type(BuildingType) / BuildStrategy
+  CityhallData : IBuildingData … stat, prefab, buildStrategy(=Manual), costMax, costRecovery, Type=>Cityhall
+  BarrackData  : IBuildingData … stat, production, prefab, buildStrategy(=Auto), Type=>Barrack
+  BuildingStatData … hp, needBuildPoint, maxCountBase, buildCost
+  ProductionStatData … List<MinionData> minionDatas, productionSpeed
+  BuildingPriorityData … buildingData(IBuildingDataにキャスト), basePriority, 評価条件（Type=>buildingData.Type）
+
+【兵士データ】
+  IMinionData / MinionData（種類SO）：以下を束ねる
+    VitalityData(hp, defense) / MovementData(moveSpeed) /
+    AttackData(attackPower, List<AttackMove>) /
+      AttackMove(powerMultiplier, windup/active/recovery, staggerDuration, reach, staminaCost, swingEffect, hitEffect) /
+    VisionData(visionRange) / BuilderData(buildSpeed) /
+    StaminaData(staminaMax, staminaRecovery, recoveryDelay) /
+    DodgeData(staminaCost, dashSpeed, dodgeDuration, iFrameDuration) /
+    ＋ productionCost（直接）, prefab, initialItems（List<ItemData>＝生成時に瓶へ入れる初期アイテム・死体を漁る用）
+  ※ 旧 MinionStatData（全部入り）は廃止。
+
+【建設ストラテジー】
+  BuildStrategy（abstract SO）：UpdateBuildPoint(Construction, deltaTime)
+  ManualBuildStrategy：兵士のBuilderからAddBuildPointが呼ばれるため何もしない
+  AutoBuildStrategy：buildPointPerSecond。時間経過で加算
+
+
+----------------------------------------------------------------
+6. インターフェース・共通クラス
+----------------------------------------------------------------
+
+  Resource（純粋C#）：current/max・Add(±)/Consume(アトミック)/CanAfford/IsFull/IsEmpty
+  Health（Resourceラッパー）：TakeDamage(amount=Add(-amount)で0クランプ)・IsEmpty
+  DamageCalculator（static）：Calc(attackPower, defense)=Max(0, atk-defense)
+  ModifiableStat（純粋C#）：base＋bonus＝Value。基礎値＋補正(装備・将来バフ)で実効ステータスを計算する器。
+    Resourceと並ぶ数値プリミティブ。防御力(PlayerCombatCore)・移動速度(PlayerMovement)に使用。クランプ/乗算は将来。
+
+  IBattleInfo：TakeDamage(BattleInfo) / Position / Team（MinionCore, BuildingCore, PlayerCombatCore実装）
+  BattleInfo（class）：attackPower, staggerDuration（将来：貫通/状態異常/クリティカル/回復）
+  IHealth：Current/Max/Team（ゲージHP供給。MinionCore/BuildingCore実装）
+
+  IState：Initialize(StateMachine) / CanEnter() / Priority / Enter / Update / Exit（MonoBehaviourとして実装）
+  TargetCandidate / TargetCategory / ITargetingStrategy（セクション4参照）
+  ICombatStrategy / CombatContext / CombatAction（セクション4参照）
+  IDasher：Dash(dir, speed) / EndDash（Movementが実装、Dodgeが使う）
+  IGaugeSource：Current/Max/Type(GaugeType)/Team。GaugeType（enum：Hp 他）
+
+  Team（enum）：None（中立）/ Red / Blue
+  BuildingType（enum）：Cityhall / Barrack 他
+  # 旧 MinionType は廃止。兵士の種類はMinionData（SO）で表現
+
+
+----------------------------------------------------------------
+7. Factory
+----------------------------------------------------------------
+
+  ※ Factoryは「生成のみ」を担う。初期化（Initialize）は呼び出し側が行う。
+
+  BuildingFactory：IBuildingDataを受け取りdata.PrefabからInstantiate、BuildingCoreを返す
+  MinionFactory  ：IMinionDataを受け取りdata.PrefabからInstantiate、MinionCoreを返す
+  MapItemFactory / BottleItemFactory：アイテム用（セクション13。未実装）
+
+
+----------------------------------------------------------------
+8. GameManagerの初期化順序
+----------------------------------------------------------------
+
+  1. 全BaseのBuildingManager・BaseAIを初期化（BaseAIにBuildingFactory・MinionFactoryもDI）
+  2. 各BaseAIが初期配置をデータ駆動で動的生成（PlaceInitialBuildings）
+       ※ initialBuildingsの各件をBuildingFactoryで生成→Coreが初期化→BuildingManagerに登録。
+         初期建物は即完成（startCompleted）。Cityhall生成時にOnTeamChanged発火。
+  3. 各BaseAIが隣接BaseのTeamを直接読んで初期化（InitializeNeighborTeams）
+  4. 各Baseが隣接CityhallのOnTeamChangedを購読（以降のTeam変化に対応・分散型）
+  5. ゲームループ開始（各BaseAIのStartDecisionを号砲として呼ぶ）
+
+  ※ 2でCityhallを生成してから3で隣接Teamを読むことで初期Teamが正しく伝播する
+  ※ Path自体は初期化メソッドを持たない（Inspectorでアサインのみ）
+  ※ アイテム機能（InventorySystem）は世界の初期化と独立して自身で初期化する（セクション13）
+
+
+----------------------------------------------------------------
+9. 実装順序（依存される側から）
+----------------------------------------------------------------
+
+  ①  ScriptableObject（データ）
+  ②  Resource / Health / DamageCalculator / BattleInfo / IBattleInfo / IHealth
+  ③  BuildingCore（Team保持）/ Construction / CostPool / CityhallBehavior / Production
+  ④  MinionCore / Movement / Vision / Attack / Hitbox / Hurtbox / Dodge / Stamina / Stagger / Builder / Occupier
+  ⑤  StateMachine / IState / 各State / 戦闘判断（ICombatStrategy等）
+  ⑥  ターゲット選定（TargetCandidate / TargetCategory / ITargetingStrategy / PriorityTargetingStrategy）
+  ⑦  Base / Path / Waypoint
+  ⑧  BuildingFactory / MinionFactory（生成のみ）
+  ⑨  BuildingManager / MinionManager
+  ⑩  BaseAI（占拠要求への対応を含む）
+  ⑪  World / GameManager
+  ⑫  Player（移動・戦闘・拾得）
+  ⑬  UI（ミニマップ・ゲージ・瓶インベントリ）
+
+  ※ アイテム機能の実装順序はセクション13-N。
+
+
+----------------------------------------------------------------
+10. 将来拡張（方針決定済み・未実装）
+----------------------------------------------------------------
+
+  - プレイヤーの戦闘参加の本格化・国への介入
+  - プレイヤーへの条件付きアグロ（ターゲット選定Strategyのスコアリング化で対応）
+  - 建物の反撃機能（砲台など）
+  - 建物・兵士の種類追加
+  - 補給システム
+  - 戦闘パラメータ追加（BattleInfoで対応。防御力は実装済み、状態異常・クリティカル等は将来）
+  - Pathの種類による移動速度変化（移動速度倍率で対応済み）
+  - 国全体を統括する中央AI
+  - 土地ごとの性格パラメータ（BuildingPriorityDataで対応）
+  - 兵士の種類ごとのターゲット優先（ターゲット選定Strategyで対応）
+  - UI（占拠土地数など）
+  - 建物でCostPoolの上限を増やす
+  - 範囲攻撃（Attackコンポーネントで追加）
+  - 回復（IHealable : IBattleInfoで拡張）
+  - 吹っ飛び（Staggerの拡張）
+
+  ● 世界統一（王様システム）：各国に王様、倒されると世界リセット（詳細は実装時に詰める）
+
+  ● レイヤー設計：Unit/Hurtbox/Hitbox/Building/Obstacle/Ground/Detectable。
+    物理マトリクスでHitbox×Hurtboxのみ命中。視界検出はLayerMask方式に変更予定。
+    静的障害物（木/箱）は移動ブロック（NavMesh焼き込み）・攻撃すり抜け
+    ※ 木による視線遮蔽は SightBlocker（位置データの自前判定）で実装済み（セクション4）。Obstacleレイヤー方式とは別路線
+
+  ● アイテムの拡張（セクション13-O参照）
+
+
+================================================================
+13. アイテム／物理瓶インベントリ（クラス設計・実装済み）
+================================================================
+
+※ 実装済み。当初「未実装」だったが、全クラスを実装し動作確認済み。
+  既存流儀（Core＋種類SO、Factoryは生成のみ、Facade、DI、新Input System直接読み）に沿う。
+  GDDセクション11と対。クラス名・フィールドは現コードに合わせる。
+
+----------------------------------------------------------------
+A. 物理空間の使い分け（前提）
+----------------------------------------------------------------
+  - マップ：3D物理（MapItemCore＝Rigidbody＋Collider、検知は Physics.OverlapSphere＋タグ"Item"）。
+  - 瓶の中：2D物理（BottleItemCore＝Rigidbody2D＋Collider2D、掴むは Physics2D、引っ張りは TargetJoint2D）。
+  - 同一オブジェクトで両立させない。マップ用／瓶用は別オブジェクト、共通データ（ItemData）で繋ぐ。
+  - 瓶（Bottle）はワールドの遠く（例 X=1000）に配置し、瓶専用カメラで撮ってUIに映す（ミニマップ流儀）。
+
+----------------------------------------------------------------
+B. クラス一覧（全て Assets/Scripts/Item/。Player関連はセクション2参照）
+----------------------------------------------------------------
+
+  データ（ScriptableObject）
+    ItemData(IItemData)  種類SO（1枚集約）。Shape/Size/Mass/Friction/Prefab/MapViewSize/Effect。
+                         BottleViewSize は Size の最大辺から導出（瓶での見た目目標サイズ）。
+    BottleData           瓶のサイズSO（InnerWidth / InnerHeight）。将来：口の広さ等。
+    ItemShape(enum)      Circle / Box / Long
+    ItemState(enum)      Falling / Stored / Dragging / Spilling
+    IItemEffect          Use()（効果の差込口・最小形）
+    ItemEffect(abstract SO) : IItemEffect  具体効果が将来継承。中身は将来
+
+  アイテム本体（Core）
+    MapItemCore     マップ用（3D物理）。Initialize(ItemData)でmass適用・SphereCollider・タグ"Item"・見た目生成。
+                    Data公開（拾いはItemPicker主導・受け身）。見た目はItemViewScalerでMapViewSizeに合わせる。
+    BottleItemCore  瓶用（2D物理）。Initialize(ItemData)でmass/friction(PhysicsMaterial2D)・形に応じたCollider2D・見た目生成。
+                    状態(ItemState)保持。受け口：MarkStored/MarkDragging/ReleaseDragging/MarkSpilling/UseItem（受け身）。
+                    見た目はItemViewScalerでBottleViewSize（Size最大辺）に合わせる。
+
+  瓶
+    Bottle      Build(BottleData)で背景板→壁(BoxCollider2D 3枚＋SpriteRenderer見た目)→ゾーンを自動生成。
+                GetDropPosition()。中身リスト Register/Unregister。IsAllAtRest()（静止判定）。
+                OnEnterInside（収納済みに）／OnEnterOutside（状態分岐）。
+                イベント：OnSpilled(ItemData)（こぼれ）／OnItemTakenOut(ItemData)（取り出し→手に渡す）。
+    BottleZone  内側/外側ゾーンのトリガー検知をBottleへ中継（SetKind/Initialize。RequireComponent Collider2D）。
+
+  操作
+    ItemPicker（Player付属）  毎フレームOverlapSphereで最寄りMapItemCore(タグ"Item")と最寄りCorpse(タグ"Corpse")を把握。
+                             E押下：近い方を処理（アイテム→拾って瓶UIを開く＋PutIntoBottle＋実体破棄／死体→OpenBottle(死体のholder)で漁る）。
+                             死体を開いている間にE：最寄りが別の死体に変わっていたらその死体へ開き直す。死体から一定距離離れたら自動Close。
+                             PutIntoBottle(ItemData)公開（拾う/手持ち戻し共通）。Bottle.OnSpilled購読→プレイヤー周囲にMapItemCore再生成。
+    BottleDragger（瓶を漁る） 瓶UI中だけenabled。新Input System。マウス→RawImage内→viewport→ViewportToWorldPoint
+                             （Overlay・camera=null・Clamp01で縁クランプ＝吹っ飛び防止）。
+                             OverlapPointAllで重なる全Colliderからアイテムだけ・一番上(Y最大)を掴む。
+                             TargetJoint2D動的追加でバネ引っ張り（Frequency/DampingRatio）。離すとReleaseDragging。
+
+  UI／保持
+    InventoryHolder     瓶の中身(StoredItem一覧=records)を所有者単位で持つMonoBehaviour（プレイヤー・兵士・死体が1個ずつ）。
+                        物理瓶/カメラ/UIは共有1セット。中身データだけ所有者ごとに分け、開く対象を切り替える＝他人の瓶を漁る土台。
+                        pendingItems(List<ItemData>=未積載の初期アイテム)：兵士の初期インベントリ。初回Load時に口の上から落として積む（位置は物理で決定）。
+                        SetInitialItems(items)でMinionCoreが生成時にセット。
+    BottleUIController  瓶UIの開閉（キー・拾うとItemPicker経由で自動）。開いている間だけ瓶カメラ・Draggerを有効化。
+                        OpenBottle()＝既定holder(プレイヤー)を開く／OpenBottle(holder)＝対象指定（死体用）。current(今の対象)を保持。
+                        OpenでStorage.Load(current)、CloseでStorage.Save(current)（静止待ちコルーチン後）。
+                        ★静止待ち中に開いたら、開く直前に旧currentへ強制Saveしてから新対象をLoad（中身の二重化を防止）。IsOpen公開。
+                        Bottle.OnItemTakenOut購読：死体(current!=playerHolder)から取り出したら自動でClose（自分の瓶は閉じない・高速行き来の物理乱れ対策）。
+    BottleStorage       与えられたInventoryHolderのrecords(StoredItem=ItemData/瓶ローカル位置/Z回転角)を記録・復元する共有の道具。
+                        Save(holder)＝Spilling以外を全記録＋破棄（破棄漏れ＝二重化を防ぐ）。
+                        Load(holder)＝回転ゼロで生成→Initialize（スケール確定）→回転適用→MarkStored→Register。
+
+  生成（Factory・生成のみ・初期化は呼び出し側）
+    MapItemFactory      Create(ItemData, position)→MapItemCore。土台prefab（MapItemCore＋3D物理）をInstantiate。
+    BottleItemFactory   Create(ItemData, position, rotation, parent)→BottleItemCore。土台prefab（BottleItemCore＋2D物理）。
+
+  供給
+    IItemSpawner        Spawn()（供給役の窓口）。
+    FixedItemSpawner    固定配置（Placementリスト＝ItemData＋position）。データ駆動で開始時に生成・拾っても復活しない。
+                        配置予定をシーン編集時に赤Gizmoで表示（デバッグ用）。
+    InventorySystem     Facade。Startで初期化順序を保証：Bottle.Build→Storage.Initialize→Spawner起動。
+
+  死体（撃破で瓶を落とす）
+    Corpse（Item/）          死体。InventoryHolderを持ち一定時間(既定30秒)残存。Eで開かれ中身を漁られる。
+                            開かれている間(BottleUIController.Instance.IsOpen && CurrentHolder==自分)はタイマー停止。
+                            OnClosed()：閉じた時に中身(records＋pending)が空なら自滅。ItemPickerが死体から一定距離(corpseCloseRange)離れたら自動Close。
+    CorpseSpawner（Minion/・兵士付属）  MinionCore.OnDestroyed購読→死亡位置にCorpse生成し中身をCopyFrom移譲（DeathPoof型・Core無改造）。
+                            中身が空でも死体は出す（現状の方針）。生成時、既存死体と重なる(corpseSpacing未満)なら周囲の空き位置へずらす。
+    ※ BottleUIControllerにstatic Instance／CurrentHolder公開を追加（Corpseの判定用）。InventoryHolder.CopyFromで中身移譲。
+
+  共通ヘルパー
+    ItemViewScaler（static）  FitToSize(view, targetSize)：boundsを測り最大辺が目標サイズになるよう等比スケール。
+
+  装備（段階1=データ＋脱着ロジック実装済み／段階2=ステータス反映・段階3=UI は予定）
+    EquipmentSlot(enum)   RightHand / LeftHand / Head / Armor / Feet（両手武器はRightHand＋LeftHandを占有）
+    ItemEquipType(enum)   OneHandWeapon(右手) / TwoHandWeapon(右手+左手) / Shield(左手) / Head / Armor / Feet
+    EquipmentData(SO)     ItemDataが参照(null=非装備品)。equipType / defenseBonus / moveSpeedBonus / weaponAttack(AttackData=武器の技セット)
+    EquipmentHolder（Player付属）  スロットごとの装備中ItemDataを保持。Equip(item)/Unequip(slot)/UnequipAll/Get。
+                                  両手武器の排他（占有スロットの既存装備を丸ごと外す）。外した装備は自分の瓶(InventoryHolder.pending)へ戻す。
+    ※ 操作（仮・段階1）：瓶から取り出して手に持った装備品をG キーで装備、H キーで全外し（PlayerHandState.TryEquipHeld）。UIは段階3で置換。
+    ※ 武器を装備していないと技が無い＝攻撃不可。
+    ※ 段階2（実装済み）：EquipmentHolderがOnEquipmentChangedを発火し、TotalDefenseBonus/TotalMoveSpeedBonus/GetWeaponAttackを提供。
+       PlayerCombatCore＝武器制（attackData直接保持を廃止。右手武器のweaponAttackでAttack再Initialize・武器なし攻撃不可。
+         防御力はModifiableStat(baseDefense＋装備補正)で保持＝被ダメ実装時に効く・現状noop）。
+       PlayerMovement＝実効速度をModifiableStat(状態speed＝base＋装備補正＝bonus)で計算。両手武器の重複補正は集計時に除外。
+    ※ 段階3（実装済み）：取り出した装備品はPlayerHandState.OnItemTakenOutが自動装備（手持ち＝装備）。仮キーG/H廃止。
+       EquipmentUIController（Player・Cキー開閉）＝左に装備欄＋右にBottleUIを同時開閉（瓶はいつも通り漁れる＝取り出して自動装備）。
+       開く時bottleUI.SetRightHalf(true)で瓶を右半分にしてOpenBottle()／閉じる時CloseBottle()。装備欄のスロット枠ButtonクリックでUnequip→瓶。
+       ※ 瓶のIキー単独はSetRightHalf(false)で中央（元の配置）。BottleUIControllerが瓶パネルの元RectTransform(anchor/pos/size)を保存し切替。
+       装備品の見た目＝EquipmentDisplay。EquipmentUIControllerが各スロット枠(UI)の位置→装備カメラのViewportToWorldPointで逆算した
+         ワールド位置にItemData.Prefabを生成（UI枠を自由配置→枠位置にモデルが映る。アンカー手動配置・等間隔不要）。ItemViewScalerでサイズ統一。
+         専用カメラで撮りRenderTexture→左半分RawImageに表示（瓶と同じ方式・物理なし）。開いている間だけ装備カメラ有効。
+         必要参照：equipmentCamera/rawImageRect/uiCamera(Overlayはnull)/depth。座標変換は瓶のBottleDragger流儀。
+       SlotView(slot/label/button)・EquipmentDisplay・equipmentCameraをInspectorで割当。labelは任意（3Dモデルだけでも可）。
+
+----------------------------------------------------------------
+C. プレイヤーの手の状態管理（Assets/Scripts/Player/・実装済み）
+----------------------------------------------------------------
+
+  HandState（enum）   Empty（手ぶら）/ Drawing（抜刀中）/ Weapon（武器構え）/ Item（アイテム所持）
+  PlayerHandState     左クリックの司令塔。状態で振り分け（手ぶら→抜刀/抜刀中→何もしない/武器構え→攻撃/アイテム所持→使う/インベントリ中→何もしない）。
+                      抜刀：Empty左クリックでDrawingへ→drawDuration秒の隙（攻撃不可・移動遅い）→Weapon（抜刀と攻撃は別アクション）。武器装備中のみ可。
+                      OnEquipmentChanged購読：武器を外したら納刀（Weapon/Drawing→Empty）。
+                        演出はdrawEffect生成・drawSound再生（任意・null可）。抜刀中は武器を見せず手ぶらのまま、抜刀完了＝Weaponで武器が出る。
+                      Bottle.OnItemTakenOut購読→手に持つ(heldItem)。手が埋まっていれば取れずItemPicker.DropToMapでマップへ（手は1個）。
+                      インベントリ開く→納刀（手持ちはItemPicker.PutIntoBottleで瓶へ）。
+                      Sheathe()公開（走るとWeapon/Drawingを納刀）／CancelDraw()公開（回避でDrawingのみキャンセル）。
+                      SetState経由で見た目更新（HandPointに武器/アイテムモデルを出し分け）。
+  PlayerCombatCore    （改修）左クリック読みを除去しTryAttack()公開（司令塔から呼ばれる受け身）。回避(スペース)は自前＝抜刀中ならhandState.CancelDraw()してからDodge。
+  PlayerMovement      （改修）速度3段（歩き/走り=Shift/武器構え・抜刀中=遅い）。Shift＋移動で走り、走るとSheathe()。
+                      PlayerHandState.Stateを参照して速度決定。
+
+----------------------------------------------------------------
+D. 設計の要点（実装で確定）
+----------------------------------------------------------------
+  - 掴み：OverlapPointAllで壁・ゾーン・背景を除外しアイテムだけ・一番上を選ぶ（密集時の掴み漏れ対策）。
+  - 座標変換：RawImage内→viewport→ViewportToWorldPoint。RawImage外はClamp01で縁止め（吹っ飛び防止）。
+  - 閉じ／保持：静止後Save（Spilling以外全破棄）。静止待ち中に開いたら強制Save後Load（二重化防止）。
+    復元は回転ゼロ生成→スケール確定→回転適用（回転済みboundsでスケールが狂うのを防止）。
+  - 見た目スケール：元モデルの大きさは不問。ItemViewScalerでboundsを測り目標サイズに等比（マップ=MapViewSize/瓶=Size最大辺）。
+  - 取り出しは即使用せず手に渡す（PlayerHandStateが受けて手に持ち、左クリックで使う＝アイテム所持中は攻撃不可のデメリット）。
+
+----------------------------------------------------------------
+E. 実装順序（実績）
+----------------------------------------------------------------
+  ① ItemData/BottleData/ItemShape/IItemEffect/ItemEffect
+  ② BottleItemCore/MapItemCore/ItemState
+  ③ Bottle/BottleZone
+  ④ BottleStorage
+  ⑤ BottleDragger
+  ⑥ BottleUIController
+  ⑦ ItemPicker
+  ⑧ MapItemFactory/BottleItemFactory
+  ⑨ IItemSpawner/FixedItemSpawner/InventorySystem
+  ⑩ ItemViewScaler（見た目スケール）・壁/背景の見た目
+  ⑪ 手の状態管理：HandState/PlayerHandState、PlayerCombatCore改修、PlayerMovement改修
+
+----------------------------------------------------------------
+O. 要確認・後回し（アイテム）
+----------------------------------------------------------------
+  - 効果の中身（IItemEffectの実装）。
+  - 供給源の追加（撃破ドロップ＝MinionCore.OnDestroyed購読／リスポーン）。位置の決め方（マップ座標／Base基準）。
+  - 初期インベントリのInspector設定。
+  - 他人の瓶を覗く・取り出す（世界の生物も瓶を持ちうる。本体が動いてから詰める）。
+  - 仕上げ：壁すり抜け（Continuous）、瓶内3Dモデルの正面固定の見せ方、こぼれ通知。
+  - 抜刀のメリハリ（構えに隙／立ち攻撃・移動攻撃の差別化）は将来見直し（戦闘システムのテーマ）。
