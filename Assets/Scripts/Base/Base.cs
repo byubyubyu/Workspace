@@ -27,6 +27,10 @@ public class Base : MonoBehaviour
     // 初期配置でも占拠の後付けでも、Cityhall 生成時にこれが呼ばれる。
     public void AnnounceCityhall(CityhallBehavior cityhall)
     {
+        // 自分のBaseの市民管理に紐づける（完成/占拠でTeamが決まると市民を生成・入れ替え）。
+        var citizenManager = GetComponent<CitizenManager>();
+        if (citizenManager != null) citizenManager.BindCityhall(cityhall);
+
         foreach (var path in paths)
         {
             foreach (var neighborBase in path.ConnectedBases)

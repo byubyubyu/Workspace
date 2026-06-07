@@ -9,6 +9,7 @@ TagManager:
   - Item
   - Player
   - Corpse
+  - Citizen
   layers:
   - Default
   - TransparentFX

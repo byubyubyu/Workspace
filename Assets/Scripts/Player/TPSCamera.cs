@@ -27,19 +27,24 @@ public class TPSCamera : MonoBehaviour
         var mouse = Mouse.current;
         if (mouse == null) return;
 
-        // 右ボタン押下中のみ回転（右クリックドラッグ）
-        if (mouse.rightButton.isPressed)
+        // ミニマップ（M画面）中はカメラ操作（回転・ズーム）を受け付けない。追従だけ続ける。
+        bool minimapOpen = MinimapController.Instance != null && MinimapController.Instance.IsOpen;
+        if (!minimapOpen)
         {
-            Vector2 delta = mouse.delta.ReadValue();
-            yaw += delta.x * rotationSpeed;
-            pitch -= delta.y * rotationSpeed;
-            pitch = Mathf.Clamp(pitch, minPitch, maxPitch);
-        }
+            // 右ボタン押下中のみ回転（右クリックドラッグ）
+            if (mouse.rightButton.isPressed)
+            {
+                Vector2 delta = mouse.delta.ReadValue();
+                yaw += delta.x * rotationSpeed;
+                pitch -= delta.y * rotationSpeed;
+                pitch = Mathf.Clamp(pitch, minPitch, maxPitch);
+            }
 
-        // ホイールでズーム
-        float scroll = mouse.scroll.ReadValue().y;
-        distance -= scroll * 0.01f; // 新方式のscrollは値が大きいので係数を小さく
-        distance = Mathf.Clamp(distance, minDistance, maxDistance);
+            // ホイールでズーム
+            float scroll = mouse.scroll.ReadValue().y;
+            distance -= scroll * 0.01f; // 新方式のscrollは値が大きいので係数を小さく
+            distance = Mathf.Clamp(distance, minDistance, maxDistance);
+        }
 
         Quaternion rotation = Quaternion.Euler(pitch, yaw, 0f);
         Vector3 focus = target.position + Vector3.up * height;

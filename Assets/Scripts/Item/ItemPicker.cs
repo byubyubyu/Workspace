@@ -15,6 +15,7 @@ public class ItemPicker : MonoBehaviour
     [SerializeField] private BottleUIController bottleUI;
     [SerializeField] private BottleItemFactory bottleItemFactory;
     [SerializeField] private MapItemFactory mapItemFactory;
+    [SerializeField] private MerchantUIController merchantUI; // 商人に近づいてEで開く売買UI
 
     [Header("拾う検知")]
     [SerializeField] private float pickupRange = 2f;
@@ -27,6 +28,7 @@ public class ItemPicker : MonoBehaviour
 
     private MapItemCore nearest;
     private Corpse nearestCorpse; // 最寄りの死体（Eで開いて漁る対象）
+    private Merchant nearestMerchant; // 最寄りの商人（Eで話しかける対象）
     private static readonly Collider[] hits = new Collider[16];
 
     // 将来の演出（拾える物を光らせる等）のために最寄りを公開。
@@ -72,8 +74,10 @@ public class ItemPicker : MonoBehaviour
     {
         nearest = null;
         nearestCorpse = null;
+        nearestMerchant = null;
         float bestItem = float.MaxValue;
         float bestCorpse = float.MaxValue;
+        float bestMerchant = float.MaxValue;
 
         int count = Physics.OverlapSphereNonAlloc(transform.position, pickupRange, hits);
         for (int i = 0; i < count; i++)
@@ -95,6 +99,13 @@ public class ItemPicker : MonoBehaviour
                 float d = (corpse.transform.position - transform.position).sqrMagnitude;
                 if (d < bestCorpse) { bestCorpse = d; nearestCorpse = corpse; }
             }
+            else if (col.CompareTag("Citizen"))
+            {
+                var merchant = col.GetComponentInParent<Merchant>();
+                if (merchant == null) continue; // 商人でない市民（にぎやかし）は対象外
+                float d = (merchant.transform.position - transform.position).sqrMagnitude;
+                if (d < bestMerchant) { bestMerchant = d; nearestMerchant = merchant; }
+            }
         }
     }
 
@@ -103,6 +114,9 @@ public class ItemPicker : MonoBehaviour
     //   ・死体を開いている時：移動で最寄りが別の死体に変わっていたら、その死体に開き直す。
     private void TryInteract()
     {
+        // 商人UIが開いていればEで閉じる。
+        if (merchantUI != null && merchantUI.IsOpen) { merchantUI.Close(); return; }
+
         // 既に瓶UIが開いている場合の扱い。
         if (bottleUI != null && bottleUI.IsOpen)
         {
@@ -123,10 +137,17 @@ public class ItemPicker : MonoBehaviour
             return;
         }
 
-        // 瓶を開いていない時：近い方を開く/拾う。
+        // 瓶を開いていない時：近い方を開く/拾う/話しかける。
         float itemDist = nearest != null ? (nearest.transform.position - transform.position).sqrMagnitude : float.MaxValue;
         float corpseDist = nearestCorpse != null ? (nearestCorpse.transform.position - transform.position).sqrMagnitude : float.MaxValue;
+        float merchantDist = nearestMerchant != null ? (nearestMerchant.transform.position - transform.position).sqrMagnitude : float.MaxValue;
 
+        // 最寄りが商人なら売買UIを開く。
+        if (nearestMerchant != null && merchantDist <= itemDist && merchantDist <= corpseDist)
+        {
+            if (merchantUI != null) merchantUI.Open(nearestMerchant);
+            return;
+        }
         if (nearestCorpse != null && corpseDist <= itemDist)
         {
             if (bottleUI != null) bottleUI.OpenBottle(nearestCorpse.Holder);

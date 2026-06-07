@@ -96,6 +96,8 @@ public class PlayerHandState : MonoBehaviour
     {
         // インベントリ中は攻撃も使用もしない（漁り操作はBottleDraggerが別途処理する）。
         if (bottleUI != null && bottleUI.IsOpen) return;
+        // ミニマップ（M画面）中も攻撃しない。
+        if (MinimapController.Instance != null && MinimapController.Instance.IsOpen) return;
 
         switch (state)
         {

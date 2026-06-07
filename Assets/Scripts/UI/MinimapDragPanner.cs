@@ -13,6 +13,7 @@ public class MinimapDragPanner : MonoBehaviour, IDragHandler
 
     public void OnDrag(PointerEventData eventData)
     {
+        if (eventData.button != PointerEventData.InputButton.Left) return; // 左ドラッグのみパン（右クリックでは動かさない）
         if (controller != null) controller.OnMinimapDrag(eventData);
     }
 }

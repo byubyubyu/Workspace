@@ -17,7 +17,7 @@ MonoBehaviour:
   size: {x: 1, y: 1}
   mass: 1
   friction: 0.4
-  prefab: {fileID: 4718251989926145140, guid: e56d1c3d93c1d6041a1f4c99a850ae5f, type: 3}
+  prefab: {fileID: 1641577825879702806, guid: 3393708608c8efb4592988c0af6a12ab, type: 3}
   mapViewSize: 1
   effect: {fileID: 0}
   equipment: {fileID: 11400000, guid: edbd34a6fc64e464a8e8fd28c86f4ff2, type: 2}

@@ -46,6 +46,9 @@ public class MinimapController : MonoBehaviour
     [SerializeField] private Color orderColor = new Color(1f, 0.9f, 0.2f); // 指示中の矢印色（発令済み）
     [SerializeField] private Color previewColor = new Color(1f, 0.6f, 0.1f); // 発令前プレビュー矢印色（追加済み）
 
+    public static MinimapController Instance { get; private set; }
+    public bool IsOpen => open;
+
     private bool open;
     private bool built;
     private Base orderSource;        // 選択中の指示元（null＝未選択）
@@ -57,12 +60,26 @@ public class MinimapController : MonoBehaviour
     private readonly List<RectTransform> orderArrows = new List<RectTransform>(); // 指示矢印のプール
     private readonly List<MinimapQuotaRow> quotaRows = new List<MinimapQuotaRow>(); // 生成した兵種行（M-3c-2）
 
+    private void Awake()
+    {
+        if (Instance != null && Instance != this) { Destroy(this); return; }
+        Instance = this;
+    }
+
+    private void OnDestroy()
+    {
+        if (Instance == this) Instance = null;
+    }
+
     private void Start()
     {
         if (quotaAddButton != null) quotaAddButton.onClick.AddListener(OnAddOrder);
         if (quotaConfirmButton != null) quotaConfirmButton.onClick.AddListener(OnConfirmAll);
         SetOpen(false);
     }
+
+    // 外部（I/Cキー処理）からM画面を閉じる（キャンセル）。
+    public void Close() => SetOpen(false);
 
     private void Update()
     {

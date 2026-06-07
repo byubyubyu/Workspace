@@ -71,9 +71,12 @@
   │     ├── Dictionary<Vector2Int, BuildingCore> buildings / グリッド空き状況管理（GridManager廃止）
   │     ├── CountByType(BuildingType) / Vector2Int gridSize
   │     └── DestroyAllBuildings（Cityhall破壊時の全消滅）
-  └── MinionManager
-        ├── List<MinionCore> minions / AddMinion / 死亡時に除外
-        # 登録：BaseAIがProduction.OnProducedを購読しAddMinion。生成はProductionがMinionFactoryで行う
+  ├── MinionManager
+  │     ├── List<MinionCore> minions / AddMinion / 死亡時に除外
+  │     # 登録：BaseAIがProduction.OnProducedを購読しAddMinion。生成はProductionがMinionFactoryで行う
+  └── CitizenManager（市民・非戦闘NPC）
+        ├── Base.AnnounceCityhall→BindCityhallでCityhall.OnTeamChangedを購読。自国化で固定数生成／占拠で入れ替え／破壊で消去
+        # 市民はCitizenCore＋Wander。詳細はセクション14
 
 【Path（道）】
   Path（GameObject）
@@ -521,3 +524,20 @@ O. 要確認・後回し（アイテム）
   - 他人の瓶を覗く・取り出す（世界の生物も瓶を持ちうる。本体が動いてから詰める）。
   - 仕上げ：壁すり抜け（Continuous）、瓶内3Dモデルの正面固定の見せ方、こぼれ通知。
   - 抜刀のメリハリ（構えに隙／立ち攻撃・移動攻撃の差別化）は将来見直し（戦闘システムのテーマ）。
+
+
+================================================================
+14. 市民（Citizen）※段階1=にぎやかし市民 実装済み（段階2=商人・段階3=売買 は予定）
+================================================================
+
+  CitizenData(SO)    moveSpeed / wanderInterval / prefab（兵士のMinionDataに相当する非戦闘版）。
+  CitizenCore        市民のハブ。Teamを持ち、Initialize(data, team, homeBase)でWanderへ配る。戦闘非関与（IBattleInfo非実装・タグ"Citizen"で兵士の視界対象外）。
+  Wander             NavMeshAgentでhomeBaseのグリッド範囲内をランダム徘徊（到着 or wanderIntervalで次の目的地。NavMesh.SamplePositionで補正）。
+  CitizenFactory     生成のみ（CitizenData.PrefabをInstantiate）。初期化は呼び出し側(CitizenManager)。
+  CitizenManager（Base付属）  Base.AnnounceCityhall→BindCityhallでCityhall.OnTeamChangedを購読。
+                     自国化で固定数(count)生成／占拠で入れ替え／破壊(None)で消去。完成済みなら購読時に即生成（順序非依存）。
+                     将来：人数(Population)リソースで上限管理（Resourceラップ）。
+  Merchant（市民の一種・固定）  話しかけ対象のマーカー（段階3で在庫・価格・売買を持つ）。CitizenManagerがmerchantData/merchantCellで1人生成（Wanderを付けず固定）。
+  MerchantUIController（Player）  商人売買UIの開閉（段階2は枠のみ）。ItemPickerが商人に近づいてEでOpen(merchant)。Current=対象商人。中身は段階3。
+  ※ ItemPickerがタグ"Citizen"＋Merchantを近接検知し、最寄りが商人ならEで売買UIを開く（瓶/死体と同じ最寄り判定系統）。
+  ※ 段階3（売買：お金＋物々交換・瓶連携）は予定。

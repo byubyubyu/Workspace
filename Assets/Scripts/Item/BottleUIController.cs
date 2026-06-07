@@ -106,6 +106,14 @@ public class BottleUIController : MonoBehaviour
         if (kb == null) return;
         if (kb[toggleKey].wasPressedThisFrame)
         {
+            // ミニマップ（M画面）中のIはMを閉じて、そのまま瓶を中央で開く（画面の切り替え）。
+            if (MinimapController.Instance != null && MinimapController.Instance.IsOpen)
+            {
+                MinimapController.Instance.Close();
+                SetRightHalf(false);
+                OpenBottle();
+                return;
+            }
             // 装備画面が開いている時のI：装備UI＋瓶を閉じてから、瓶を中央で単独で開き直す。
             if (equipmentUI != null && equipmentUI.IsOpen)
             {

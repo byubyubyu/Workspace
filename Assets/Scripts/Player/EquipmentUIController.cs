@@ -59,7 +59,17 @@ public class EquipmentUIController : MonoBehaviour
     private void Update()
     {
         var kb = Keyboard.current;
-        if (kb != null && kb[toggleKey].wasPressedThisFrame) Toggle();
+        if (kb != null && kb[toggleKey].wasPressedThisFrame)
+        {
+            // ミニマップ（M画面）中のCはMを閉じて、そのまま装備画面を開く（画面の切り替え）。
+            if (MinimapController.Instance != null && MinimapController.Instance.IsOpen)
+            {
+                MinimapController.Instance.Close();
+                Open();
+                return;
+            }
+            Toggle();
+        }
     }
 
     private void Toggle()
