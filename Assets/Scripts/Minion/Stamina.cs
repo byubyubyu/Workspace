@@ -12,6 +12,8 @@ public class Stamina : MonoBehaviour
     private float recovery;       // 毎秒の回復量
     private float recoveryDelay;  // 使用後、回復が止まる秒数
     private float delayTimer;     // 残りの回復停止時間（0以下で回復再開）
+    private float baseMax;        // SO由来の素の最大値（乗数の再計算用）
+    private float maxScale = 1f;  // 最大値への乗数（加齢など。1=等倍）
     private Team team;
 
     // ゲージ表示用（StaminaGaugeSourceが読む）。
@@ -25,8 +27,23 @@ public class Stamina : MonoBehaviour
         this.team = team;
         recovery = data.staminaRecovery;
         recoveryDelay = data.recoveryDelay;
-        resource = new Resource(data.staminaMax, data.staminaMax); // 満タン開始
+        baseMax = data.staminaMax;
+        maxScale = 1f;
+        resource = new Resource(baseMax, baseMax); // 満タン開始
         delayTimer = 0f;
+    }
+
+    // 最大値への乗数を適用する（加齢の老衰など）。現在値の割合を維持して作り直す。
+    public void SetMaxScale(float scale)
+    {
+        if (resource == null || baseMax <= 0f) return;
+        scale = Mathf.Max(0.01f, scale);
+        if (Mathf.Approximately(scale, maxScale)) return;
+        float ratio = Max > 0f ? Current / Max : 1f;
+        maxScale = scale;
+        float newMax = baseMax * maxScale;
+        resource = new Resource(newMax, newMax);
+        resource.Add(-newMax * (1f - ratio)); // 割合維持（Healthと同じ作り直し方）
     }
 
     private void Update()

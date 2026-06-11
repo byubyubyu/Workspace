@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 94d57c45720a0ac4288da21e743a3602, type: 3}
+  m_Name: MinionData_Monster
+  m_EditorClassIdentifier: Assembly-CSharp::MinionData
+  vitality: {fileID: 11400000, guid: 487bfc0ba360b4a428c87c28be74df2b, type: 2}
+  movement: {fileID: 11400000, guid: 33806095c920f3c49b24af3913689258, type: 2}
+  attack: {fileID: 11400000, guid: 39593e0171fdb494c9485e2db2cde22e, type: 2}
+  vision: {fileID: 11400000, guid: 432450b0441cd0d4aaa1c94d0e5d3cb7, type: 2}
+  builder: {fileID: 0}
+  stamina: {fileID: 11400000, guid: 1bf1b4def38e4ef4e894cfc0b064be8d, type: 2}
+  dodge: {fileID: 0}
+  productionCost: 0
+  prefab: {fileID: 4377348057659764180, guid: 77bc54c7d79983f44ac7c3bb4c2f060c, type: 3}
+  initialItems:
+  - {fileID: 11400000, guid: 1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f60, type: 2}
+  - {fileID: 11400000, guid: 1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f60, type: 2}
+  - {fileID: 11400000, guid: 1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f60, type: 2}
+  - {fileID: 11400000, guid: 1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f60, type: 2}
+  - {fileID: 11400000, guid: 1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f60, type: 2}

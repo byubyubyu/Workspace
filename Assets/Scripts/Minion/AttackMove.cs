@@ -16,6 +16,9 @@ public class AttackMove : ScriptableObject
     public float reach;                // AI判断用の間合い目安（実際の当たりはHitboxのColliderサイズ）
     public float staminaCost;          // 1振りで消費するスタミナ（0=消費なし。兵士/プレイヤーごとにSOで設定）
 
+    [Header("モーション識別子（任意・空＝モーションなし。例: \"ForelegSlam\"。対応するMotionコンポーネントがフェーズ連動で部位を動かす）")]
+    public string motionId = "";       // 技とモーションの紐づけをデータ駆動にする（呼び出し側に分岐を足さない）
+
     [Header("エフェクト（任意・未設定なら何も出ない。Prefab推奨：ParticleSystemの Stop Action=Destroy で自動消滅）")]
     public GameObject swingEffect;     // 攻撃側：判定フェーズ開始（振った瞬間）に出す。当たり外れに関係なく出る
     public GameObject hitEffect;       // 受け手：命中した接触点に出す

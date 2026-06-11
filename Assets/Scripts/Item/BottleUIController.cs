@@ -26,6 +26,7 @@ public class BottleUIController : MonoBehaviour
     [Header("入力")]
     [SerializeField] private Key toggleKey = Key.I;    // 開閉キー（仮：Inventory）
     [SerializeField] private EquipmentUIController equipmentUI; // 装備画面中のIで装備を閉じて瓶を中央に開き直すため
+    [SerializeField] private GameObject vignette;       // 丸切り抜き（I＝中央表示の時だけON。右側表示では消す）
 
     [Header("閉じる時の静止待ち")]
     [SerializeField] private float closeTimeout = 3f;  // 静止しなくても強制確定するまでの秒数（保険）
@@ -82,12 +83,15 @@ public class BottleUIController : MonoBehaviour
         if (bottle != null) bottle.OnItemTakenOut -= OnItemTakenOut;
     }
 
-    // 取り出し成立時：死体（他人の瓶＝current!=playerHolder）を漁っていたら、1個取り出すごとに自動で閉じる。
+    // 操作中プレイヤーのインベントリ（陣営選択後はActivePlayer＝人間/魔族それぞれの自分の瓶。未設定時は従来のplayerHolder）。
+    private InventoryHolder OwnHolder => ActivePlayer.Holder != null ? ActivePlayer.Holder : playerHolder;
+
+    // 取り出し成立時：死体（他人の瓶＝current!=自分）を漁っていたら、1個取り出すごとに自動で閉じる。
     //   手早い取り出しで死体↔自分の瓶を高速に行き来して物理が乱れるのを避ける（1個取ったら確定して閉じる）。
     //   自分の瓶は閉じない（漁い続けられる）。手に持つ処理は PlayerHandState 側が別途購読して行う。
     private void OnItemTakenOut(ItemData data)
     {
-        if (open && current != null && current != playerHolder)
+        if (open && current != null && current != OwnHolder)
         {
             CloseBottle();
         }
@@ -122,6 +126,14 @@ public class BottleUIController : MonoBehaviour
                 OpenBottle();
                 return;
             }
+            // 進化画面（魔族のC画面）が開いている時のI：進化画面を閉じて瓶を開く（画面の切り替え）。
+            if (EvolutionUIController.Instance != null && EvolutionUIController.Instance.IsOpen)
+            {
+                EvolutionUIController.Instance.Close();
+                SetRightHalf(false);
+                OpenBottle();
+                return;
+            }
             // 装備画面が開いている時のI：装備UI＋瓶を閉じてから、瓶を中央で単独で開き直す。
             if (equipmentUI != null && equipmentUI.IsOpen)
             {
@@ -134,10 +146,10 @@ public class BottleUIController : MonoBehaviour
         }
     }
 
-    // 既定（プレイヤーの瓶）を開く。ItemPicker・I キーから呼ばれる。
+    // 既定（操作中プレイヤーの瓶）を開く。ItemPicker・I キーから呼ばれる。
     public void OpenBottle()
     {
-        OpenBottle(playerHolder);
+        OpenBottle(OwnHolder);
     }
 
     // 対象を指定して開く（段階4で死体の瓶もこれで開く）。キー or 拾った時に外から呼ぶ。
@@ -220,13 +232,15 @@ public class BottleUIController : MonoBehaviour
         if (dragger != null) dragger.enabled = value;
     }
 
-    // 瓶パネルの配置を切り替える（true=右半分＝装備画面と並べる／false=元の配置＝中央・I単独）。
+    // 瓶パネルの配置を切り替える（true=右1/3＝装備画面と並べる／false=元の配置＝中央・I単独）。
+    //   丸切り抜き（vignette）はI＝中央表示の演出なので、右側表示では消す。
     public void SetRightHalf(bool right)
     {
+        if (vignette != null) vignette.SetActive(!right);
         if (bottleRect == null) return;
         if (right)
         {
-            bottleRect.anchorMin = new Vector2(0.5f, 0f);
+            bottleRect.anchorMin = new Vector2(0.64f, 0f); // 右36%（瓶を大きく＝コインを掴みやすく）
             bottleRect.anchorMax = new Vector2(1f, 1f);
             bottleRect.offsetMin = Vector2.zero;
             bottleRect.offsetMax = Vector2.zero;

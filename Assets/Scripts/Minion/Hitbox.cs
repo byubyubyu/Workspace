@@ -12,6 +12,10 @@ using UnityEngine;
 [RequireComponent(typeof(BoxCollider))]
 public class Hitbox : MonoBehaviour
 {
+    // 命中の通知（誰に当てたか）。スキルXP（PlayerSkills）等が購読する。
+    //   Hitbox自身はスキルシステムを知らない（イベントで疎結合）。兵士側は未購読＝挙動不変。
+    public event System.Action<IBattleInfo> OnDealtHit;
+
     private BoxCollider col;
     private float attackPower;     // 今回の一撃の実威力（Attackが設定）
     private float staggerDuration; // 今回の一撃のひるみ時間（Attackが設定）
@@ -58,7 +62,9 @@ public class Hitbox : MonoBehaviour
         if (hitThisSwing.Contains(victim)) return; // この振りで既に当てた相手は二重ヒットさせない
 
         hitThisSwing.Add(victim);
-        victim.TakeDamage(new BattleInfo { attackPower = attackPower, staggerDuration = staggerDuration });
+        // Hurtbox経由で渡す（部位Hurtboxなら倍率・部位HPが差し込まれる。既定は素通し）。
+        hurtbox.TakeHit(new BattleInfo { attackPower = attackPower, staggerDuration = staggerDuration, attacker = owner });
+        OnDealtHit?.Invoke(victim); // 命中通知（スキルXP等の獲得源）
 
         // 受け手：命中した接触点に hitEffect を出す（ワールド・親なし。ParticleSystemなら自動消滅）。
         if (hitEffect != null)

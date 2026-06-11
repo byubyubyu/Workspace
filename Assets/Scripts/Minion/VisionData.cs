@@ -6,4 +6,5 @@ using UnityEngine;
 public class VisionData : ScriptableObject
 {
     public float visionRange;
+    public bool targetBuildings = true; // falseで敵建物を攻撃候補に入れない（建物を壊さないモンスター等）
 }

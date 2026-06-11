@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0faecc2f3a1f6574cb4aaf967b5a8911, type: 3}
+  m_Name: AttackMove_Monster_Slam
+  m_EditorClassIdentifier: Assembly-CSharp::AttackMove
+  powerMultiplier: 1
+  windupTime: 0.3
+  activeTime: 0.3
+  recoveryTime: 0.3
+  staggerDuration: 0.8
+  reach: 4.5
+  staminaCost: 50
+  motionId: ForelegSlam
+  swingEffect: {fileID: 6188706574630452542, guid: c9c812742f7841b46b53bfbd44663300, type: 3}
+  hitEffect: {fileID: 6188706574630452542, guid: b3a328c6f894f0e4e82bb4fe4d69f751, type: 3}

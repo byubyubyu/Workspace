@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 730938fef0e913a4fa25b0bcbd0f3e91, type: 3}
+  m_Name: PartData_DemonTail_Lv1
+  m_EditorClassIdentifier: Assembly-CSharp::PartData
+  partName: "\u5C3B\u5C3E"
+  tier: 1
+  partPrefab: {fileID: 4076185970163592531, guid: ae031e4dafc8c814a86a94eb1a15d33b, type: 3}
+  damageMultiplier: 0.5
+  partHp: 20
+  breakStaggerBonus: 5
+  regenTime: 60
+  hpBonus: 0
+  defenseBonus: 0
+  attackPowerBonus: 0
+  moveSpeedBonus: 0
+  grantedMoves: []
+  evolutions: []

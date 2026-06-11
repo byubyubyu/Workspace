@@ -27,6 +27,7 @@ public class MinimapController : MonoBehaviour
     [SerializeField] private Button quotaAddButton;           // この派遣先を追加（F1）
     [SerializeField] private Button quotaConfirmButton;       // 全発令（溜めた全指示先を一括送信）
     [SerializeField] private Text pendingSummaryLabel;        // 追加済み指示の一覧表示（任意・未設定可）
+    [SerializeField] private EquipmentUIController equipmentUI; // C画面中のM＝装備をキャンセルしてMを開くため
 
     [Header("操作")]
     [SerializeField] private Key toggleKey = Key.M;
@@ -90,6 +91,24 @@ public class MinimapController : MonoBehaviour
             if (MerchantUIController.Instance != null && MerchantUIController.Instance.IsOpen)
             {
                 MerchantUIController.Instance.Close();
+                SetOpen(true);
+            }
+            // 進化画面（魔族のC画面）中のMは進化画面を閉じる → Mを開く。
+            else if (EvolutionUIController.Instance != null && EvolutionUIController.Instance.IsOpen)
+            {
+                EvolutionUIController.Instance.Close();
+                SetOpen(true);
+            }
+            // 装備画面（C）中のMは装備をキャンセル（瓶も一緒に閉じる）→ Mを開く。
+            else if (equipmentUI != null && equipmentUI.IsOpen)
+            {
+                equipmentUI.Close();
+                SetOpen(true);
+            }
+            // 瓶（I単独）中のMは瓶をキャンセル → Mを開く。
+            else if (BottleUIController.Instance != null && BottleUIController.Instance.IsOpen)
+            {
+                BottleUIController.Instance.CloseBottle();
                 SetOpen(true);
             }
             else SetOpen(!open);
@@ -167,7 +186,7 @@ public class MinimapController : MonoBehaviour
     private List<Vector3> BuildRoutePoints(Base a, Base b, Path path)
     {
         var pts = new List<Vector3>();
-        pts.Add(a.transform.position);
+        pts.Add(a.GridCenterWorld); // マーカーと同じグリッド中央から線を引く
 
         var wps = path.Waypoints;
         if (wps != null && wps.Count > 0)
@@ -175,8 +194,8 @@ public class MinimapController : MonoBehaviour
             bool reverse = false;
             if (wps.Count >= 2 && wps[0] != null && wps[wps.Count - 1] != null)
             {
-                float dFirst = (wps[0].Position - a.transform.position).sqrMagnitude;
-                float dLast = (wps[wps.Count - 1].Position - a.transform.position).sqrMagnitude;
+                float dFirst = (wps[0].Position - a.GridCenterWorld).sqrMagnitude;
+                float dLast = (wps[wps.Count - 1].Position - a.GridCenterWorld).sqrMagnitude;
                 reverse = dFirst > dLast;
             }
             for (int i = 0; i < wps.Count; i++)
@@ -186,7 +205,7 @@ public class MinimapController : MonoBehaviour
             }
         }
 
-        pts.Add(b.transform.position);
+        pts.Add(b.GridCenterWorld);
         return pts;
     }
 
@@ -216,7 +235,7 @@ public class MinimapController : MonoBehaviour
             bool visible = IsInView(baseRef.transform.position);
             if (marker.gameObject.activeSelf != visible) marker.gameObject.SetActive(visible);
             if (visible)
-                marker.rectTransform.anchoredPosition = WorldToOverlay(baseRef.transform.position);
+                marker.rectTransform.anchoredPosition = WorldToOverlay(baseRef.GridCenterWorld); // 左下隅でなくグリッド中央に置く
         }
         foreach (var (wa, wb, line) in segments)
         {
@@ -234,12 +253,17 @@ public class MinimapController : MonoBehaviour
         return vp.x >= 0f && vp.x <= 1f && vp.y >= 0f && vp.y <= 1f;
     }
 
+    // 操作中プレイヤーの位置・Team（陣営選択後はActivePlayer＝人間/魔族。未設定時は従来のplayer参照）。
+    private Transform PlayerTransform => ActivePlayer.Exists ? ActivePlayer.Transform : (player != null ? player.transform : null);
+    private Team PlayerTeam => ActivePlayer.Exists ? ActivePlayer.Team : (player != null ? player.Team : Team.None);
+
     // ミニマップカメラをPlayerの真上へ（XZをPlayerに合わせ、高さYは現状維持）。開くたびに呼ぶ。
     private void CenterCameraOnPlayer()
     {
-        if (minimapCamera == null || player == null) return;
+        var pt = PlayerTransform;
+        if (minimapCamera == null || pt == null) return;
         Vector3 cam = minimapCamera.transform.position;
-        Vector3 pp = player.transform.position;
+        Vector3 pp = pt.position;
         cam.x = pp.x;
         cam.z = pp.z;
         minimapCamera.transform.position = cam;
@@ -446,9 +470,18 @@ public class MinimapController : MonoBehaviour
         for (int i = 0; i < quotas.Count; i++)
         {
             if (i > 0) sb.Append(", ");
-            sb.Append(quotas[i].type.name).Append("×").Append(quotas[i].count);
+            sb.Append(DisplayName(quotas[i].type)).Append("×").Append(quotas[i].count);
         }
         return sb.ToString();
+    }
+
+    // アセット名の接頭辞を剥がした表示名（例: MinionData_Minion → Minion。QuotaRowと同じ流儀）。
+    private static string DisplayName(MinionData type)
+    {
+        if (type == null) return "?";
+        string n = type.name;
+        int us = n.IndexOf('_');
+        return (us >= 0 && us < n.Length - 1) ? n.Substring(us + 1) : n;
     }
 
     private void UpdatePendingSummary()
@@ -490,10 +523,11 @@ public class MinimapController : MonoBehaviour
     // 指示元になれる：自国かつプレイヤーの近く。
     private bool CanBeSource(Base b)
     {
-        if (b == null || player == null) return false;
+        var pt = PlayerTransform;
+        if (b == null || pt == null) return false;
         var ai = b.GetComponent<BaseAI>();
-        if (ai == null || ai.Team != player.Team) return false;
-        return Vector3.Distance(player.transform.position, b.transform.position) <= commandRange;
+        if (ai == null || ai.Team != PlayerTeam) return false;
+        return Vector3.Distance(pt.position, b.transform.position) <= commandRange;
     }
 
     // 指示先になれる：指示元に隣接し、中立または敵。
@@ -557,7 +591,7 @@ public class MinimapController : MonoBehaviour
                 arrow.gameObject.SetActive(true);
                 var img = arrow.GetComponent<Image>();
                 if (img != null) img.color = orderColor;
-                PlaceLine(arrow, WorldToOverlay(b.transform.position), WorldToOverlay(tgt.transform.position));
+                PlaceLine(arrow, WorldToOverlay(b.GridCenterWorld), WorldToOverlay(tgt.GridCenterWorld));
             }
         }
 
@@ -570,7 +604,7 @@ public class MinimapController : MonoBehaviour
                 arrow.gameObject.SetActive(true);
                 var img = arrow.GetComponent<Image>();
                 if (img != null) img.color = previewColor;
-                PlaceLine(arrow, WorldToOverlay(orderSource.transform.position), WorldToOverlay(o.target.transform.position));
+                PlaceLine(arrow, WorldToOverlay(orderSource.GridCenterWorld), WorldToOverlay(o.target.GridCenterWorld));
             }
         }
 

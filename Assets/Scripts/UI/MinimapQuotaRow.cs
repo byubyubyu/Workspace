@@ -21,7 +21,14 @@ public class MinimapQuotaRow : MonoBehaviour
         Type = type;
         this.min = min;
         this.max = max;
-        if (nameLabel != null) nameLabel.text = type != null ? type.name : "?";
+        if (nameLabel != null)
+        {
+            // アセット名の接頭辞（例: MinionData_Minion → Minion）を剥がして表示する。
+            string n = type != null ? type.name : "?";
+            int us = n.IndexOf('_');
+            if (us >= 0 && us < n.Length - 1) n = n.Substring(us + 1);
+            nameLabel.text = n;
+        }
 
         if (minusButton != null) { minusButton.onClick.RemoveAllListeners(); minusButton.onClick.AddListener(() => SetCount(count - 1)); }
         if (plusButton != null) { plusButton.onClick.RemoveAllListeners(); plusButton.onClick.AddListener(() => SetCount(count + 1)); }

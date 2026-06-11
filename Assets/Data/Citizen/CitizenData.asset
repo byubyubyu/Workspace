@@ -15,3 +15,4 @@ MonoBehaviour:
   moveSpeed: 2
   wanderInterval: 3
   prefab: {fileID: 2609530451200212745, guid: 6e13d45137daebe4fb372159c6262f2e, type: 3}
+  skillData: {fileID: 11400000, guid: f5b9c81e01536e8418c34736ff945d66, type: 2}

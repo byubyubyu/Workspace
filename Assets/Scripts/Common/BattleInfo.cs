@@ -5,6 +5,7 @@ public class BattleInfo
 {
     public float attackPower;      // 素の攻撃力（実威力 = AttackData.attackPower × AttackMove.powerMultiplier）
     public float staggerDuration;  // ひるみ時間（攻撃側が渡す。塊3-Bのひるみ実装で受け手が使う）
+    public IBattleInfo attacker;   // 攻撃した本人（Hitboxが設定。スキルXPの同一相手逓減等、受け手側の判断材料）
 
     // 将来：防御貫通・状態異常・クリティカル・回復量
 }

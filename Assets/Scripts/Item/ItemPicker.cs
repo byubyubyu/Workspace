@@ -16,6 +16,7 @@ public class ItemPicker : MonoBehaviour
     [SerializeField] private BottleItemFactory bottleItemFactory;
     [SerializeField] private MapItemFactory mapItemFactory;
     [SerializeField] private MerchantUIController merchantUI; // 商人に近づいてEで開く売買UI
+    [SerializeField] private CitizenProfileUIController citizenProfileUI; // 市民（商人以外）に近づいてEで開く婚活UI
 
     [Header("拾う検知")]
     [SerializeField] private float pickupRange = 2f;
@@ -29,7 +30,7 @@ public class ItemPicker : MonoBehaviour
     private MapItemCore nearest;
     private Corpse nearestCorpse; // 最寄りの死体（Eで開いて漁る対象）
     private Merchant nearestMerchant; // 最寄りの商人（Eで話しかける対象）
-    private static readonly Collider[] hits = new Collider[16];
+    private CitizenSkills nearestCitizen; // 最寄りの市民・商人以外（Eでプロフィール＝婚活）
 
     // 将来の演出（拾える物を光らせる等）のために最寄りを公開。
     public MapItemCore Nearest => nearest;
@@ -72,41 +73,19 @@ public class ItemPicker : MonoBehaviour
     // 周囲を3D検知し、タグ"Item"の最寄りMapItemCoreと、タグ"Corpse"の最寄りCorpseを把握する。
     private void RefreshNearest()
     {
-        nearest = null;
-        nearestCorpse = null;
-        nearestMerchant = null;
-        float bestItem = float.MaxValue;
-        float bestCorpse = float.MaxValue;
-        float bestMerchant = float.MaxValue;
+        // 自己申告レジストリ（All）からNearestFinder.Findで選ぶ（物理検索は使わない＝
+        //   自分の体のコライダーや地形が混ざる問題が構造的に起きない）。
+        Vector3 pos = transform.position;
+        nearest = NearestFinder.Find(MapItemCore.All, pos, pickupRange);
+        nearestCorpse = NearestFinder.Find(Corpse.All, pos, pickupRange);
 
-        int count = Physics.OverlapSphereNonAlloc(transform.position, pickupRange, hits);
-        for (int i = 0; i < count; i++)
-        {
-            var col = hits[i];
-            if (col == null) continue;
+        var merchantCitizen = NearestFinder.Find(CitizenCore.All, pos, pickupRange, c => c.GetComponent<Merchant>() != null);
+        nearestMerchant = merchantCitizen != null ? merchantCitizen.GetComponent<Merchant>() : null;
 
-            if (col.CompareTag("Item"))
-            {
-                var item = col.GetComponentInParent<MapItemCore>();
-                if (item == null) continue;
-                float d = (item.transform.position - transform.position).sqrMagnitude;
-                if (d < bestItem) { bestItem = d; nearest = item; }
-            }
-            else if (col.CompareTag("Corpse"))
-            {
-                var corpse = col.GetComponentInParent<Corpse>();
-                if (corpse == null) continue;
-                float d = (corpse.transform.position - transform.position).sqrMagnitude;
-                if (d < bestCorpse) { bestCorpse = d; nearestCorpse = corpse; }
-            }
-            else if (col.CompareTag("Citizen"))
-            {
-                var merchant = col.GetComponentInParent<Merchant>();
-                if (merchant == null) continue; // 商人でない市民（にぎやかし）は対象外
-                float d = (merchant.transform.position - transform.position).sqrMagnitude;
-                if (d < bestMerchant) { bestMerchant = d; nearestMerchant = merchant; }
-            }
-        }
+        // 商人でない市民＝プロフィール（婚活）対象。
+        var plainCitizen = NearestFinder.Find(CitizenCore.All, pos, pickupRange,
+            c => c.GetComponent<Merchant>() == null && c.GetComponent<CitizenSkills>() != null);
+        nearestCitizen = plainCitizen != null ? plainCitizen.GetComponent<CitizenSkills>() : null;
     }
 
     // E押下時の処理。
@@ -114,8 +93,9 @@ public class ItemPicker : MonoBehaviour
     //   ・死体を開いている時：移動で最寄りが別の死体に変わっていたら、その死体に開き直す。
     private void TryInteract()
     {
-        // 商人UIが開いていればEで閉じる。
+        // 商人UIが開いていればEで閉じる。プロフィール（婚活）UIも同様。
         if (merchantUI != null && merchantUI.IsOpen) { merchantUI.Close(); return; }
+        if (citizenProfileUI != null && citizenProfileUI.IsOpen) { citizenProfileUI.Close(); return; }
 
         // 既に瓶UIが開いている場合の扱い。
         if (bottleUI != null && bottleUI.IsOpen)
@@ -128,6 +108,7 @@ public class ItemPicker : MonoBehaviour
                 if (nearestCorpse != null && nearestCorpse.Holder != openHolder)
                 {
                     bottleUI.CloseBottle();
+                    bottleUI.SetRightHalf(false); // 死体漁りは常に中央（装備/商人画面の右寄せを引きずらない）
                     bottleUI.OpenBottle(nearestCorpse.Holder);
                 }
                 return;
@@ -141,16 +122,28 @@ public class ItemPicker : MonoBehaviour
         float itemDist = nearest != null ? (nearest.transform.position - transform.position).sqrMagnitude : float.MaxValue;
         float corpseDist = nearestCorpse != null ? (nearestCorpse.transform.position - transform.position).sqrMagnitude : float.MaxValue;
         float merchantDist = nearestMerchant != null ? (nearestMerchant.transform.position - transform.position).sqrMagnitude : float.MaxValue;
+        float citizenDist = nearestCitizen != null ? (nearestCitizen.transform.position - transform.position).sqrMagnitude : float.MaxValue;
 
         // 最寄りが商人なら売買UIを開く。
-        if (nearestMerchant != null && merchantDist <= itemDist && merchantDist <= corpseDist)
+        if (nearestMerchant != null && merchantDist <= itemDist && merchantDist <= corpseDist && merchantDist <= citizenDist)
         {
             if (merchantUI != null) merchantUI.Open(nearestMerchant);
             return;
         }
+        // 最寄りが市民（商人以外）ならプロフィール（婚活）を開く（家系持ち＝人間のみ。魔族のEは素通し）。
+        if (nearestCitizen != null && citizenProfileUI != null && citizenProfileUI.CanOpen
+            && citizenDist <= itemDist && citizenDist <= corpseDist)
+        {
+            citizenProfileUI.Open(nearestCitizen);
+            return;
+        }
         if (nearestCorpse != null && corpseDist <= itemDist)
         {
-            if (bottleUI != null) bottleUI.OpenBottle(nearestCorpse.Holder);
+            if (bottleUI != null)
+            {
+                bottleUI.SetRightHalf(false); // 死体漁りは常に中央（装備/商人画面の右寄せを引きずらない）
+                bottleUI.OpenBottle(nearestCorpse.Holder);
+            }
             return;
         }
         if (nearest != null) TryPickup();

@@ -5,6 +5,7 @@ using UnityEngine;
 public class Vision : MonoBehaviour
 {
     private float visionRange;
+    private bool targetBuildings;
     private Team team;
 
     private List<TargetCandidate> attackCandidates = new List<TargetCandidate>();
@@ -13,6 +14,7 @@ public class Vision : MonoBehaviour
     public void Initialize(VisionData data, Team team)
     {
         visionRange = data.visionRange;
+        targetBuildings = data.targetBuildings;
         this.team = team;
     }
 
@@ -49,6 +51,8 @@ public class Vision : MonoBehaviour
 
                 if (core.Team != team)
                 {
+                    // 建物を攻撃対象にしない設定（モンスター等）なら候補に入れない
+                    if (!targetBuildings) continue;
                     // 視線が障害物（木）に遮られている敵建物は見えない＝候補にしない
                     if (IsHiddenByObstacle(core.Position)) continue;
                     attackCandidates.Add(new TargetCandidate(core, TargetCategory.Building));
@@ -63,9 +67,12 @@ public class Vision : MonoBehaviour
             }
             else if (hit.CompareTag("Player"))
             {
-                // プレイヤー（PlayerCombatCore）。敵Teamなら攻撃候補（優先度は敵兵士の次・敵建物より上）
-                var player = hit.GetComponent<PlayerCombatCore>();
+                // プレイヤー。人間（PlayerCombatCore）・魔族（DemonCore）どちらもIBattleInfoとして検出する。
+                // 敵Teamなら攻撃候補（優先度は敵兵士の次・敵建物より上）
+                var player = hit.GetComponent<IBattleInfo>();
                 if (player == null) continue;
+                // 死亡中（リスポーン待ちの魔族等）は狙わない（IHealth実装者のみ判定。人間は被ダメnoopで対象外）
+                if (player is IHealth ph && ph.Max > 0f && ph.Current <= 0f) continue;
                 if (player.Team != team)
                 {
                     // 視線が障害物（木）に遮られているプレイヤーは見えない＝候補にしない

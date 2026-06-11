@@ -4,6 +4,7 @@
 //   装備する操作は持たない：取り出した装備品はPlayerHandStateが自動装備する（手持ち＝装備の方針）。
 //   表示は当面アイテム名テキスト（最小）。3Dモデルのアイコン表示は将来（瓶と同じRenderTexture方式）。
 //   ※ Canvas・スロットのButton/TextはInspectorで割り当てる（瓶UI・ミニマップと同じ流儀）。
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -31,8 +32,23 @@ public class EquipmentUIController : MonoBehaviour
     [SerializeField] private Key toggleKey = Key.C;          // 開閉キー
     [SerializeField] private List<SlotView> slotViews = new List<SlotView>(); // 5スロット分（右手/左手/頭/鎧/靴）
 
+    [Header("左カラム＝メインカメラの寄り表示")]
+    [SerializeField] private Camera mainCamera;             // 通常プレイのメインカメラ（開いている間だけ左1/3に絞る。未設定ならCamera.main）
+    [SerializeField] private TPSCamera tpsCamera;           // 視点のクローズアップ切替（正面寄り）
+    [SerializeField] private float closeUpDistance = 2.5f;  // 寄りの距離
+    [SerializeField] private float closeUpPitch = 5f;       // 寄りの俯角
+    [SerializeField] private float closeUpHeight = 1.2f;    // 注視点の高さ（低くするほどカメラ・画面中央が下がる）
+    [SerializeField] private float closeUpFarClip = 8f;     // クローズアップ中の描画距離（キャラ周辺だけ描画＝それ以遠は虚空）
+
     private bool open;
     public bool IsOpen => open;
+
+    private Rect savedCamRect = new Rect(0f, 0f, 1f, 1f);   // 開く前のメインカメラ描画範囲（閉じたら戻す）
+    private float savedFarClip;                              // 開く前の描画距離
+    private CameraClearFlags savedClearFlags;                // 開く前のクリア方法
+    private Color savedBgColor;                              // 開く前の背景色
+    private readonly Dictionary<EquipmentSlot, ItemData> shown = new Dictionary<EquipmentSlot, ItemData>(); // 前回表示の装備（フラッシュ差分検知用）
+    private readonly HashSet<Graphic> flashing = new HashSet<Graphic>(); // 多重フラッシュ防止
 
     private void Start()
     {
@@ -61,6 +77,8 @@ public class EquipmentUIController : MonoBehaviour
         var kb = Keyboard.current;
         if (kb != null && kb[toggleKey].wasPressedThisFrame)
         {
+            // 魔族を操作中のCは進化画面（EvolutionUIController）が担当する。人間の装備画面は開かない。
+            if (ActivePlayer.Exists && ActivePlayer.Go.GetComponent<DemonCore>() != null) return;
             // 商人UI中のCは取引キャンセル→装備画面を開く（画面の切り替え）。
             if (MerchantUIController.Instance != null && MerchantUIController.Instance.IsOpen)
             {
@@ -85,17 +103,35 @@ public class EquipmentUIController : MonoBehaviour
         else Open();
     }
 
-    // 装備UI＋自分の瓶（右半分）を開く。
+    // 装備UI＋自分の瓶（右1/3）を開く。
     public void Open()
     {
         if (open) return;
         open = true;
         if (panel != null) panel.SetActive(true);
         if (equipmentCamera != null) equipmentCamera.enabled = true; // 開いている間だけ装備カメラを有効化
-        Refresh(); // 最新の装備内容を反映
+
+        // 左1/3にメインカメラを絞り、自キャラ正面のクローズアップへ（閉じたら元に戻す）。
+        //   描画距離もキャラ周辺まで絞る＝それ以遠は黒い虚空（演出兼・描画コスト削減）。
+        var cam = mainCamera != null ? mainCamera : Camera.main;
+        if (cam != null)
+        {
+            savedCamRect = cam.rect;
+            savedFarClip = cam.farClipPlane;
+            savedClearFlags = cam.clearFlags;
+            savedBgColor = cam.backgroundColor;
+            cam.rect = new Rect(0f, 0f, 1f / 3f, 1f);
+            cam.farClipPlane = closeUpFarClip;
+            cam.clearFlags = CameraClearFlags.SolidColor;
+            cam.backgroundColor = Color.black;
+        }
+        if (tpsCamera != null) tpsCamera.BeginCloseUp(closeUpDistance, closeUpPitch, closeUpHeight);
+
+        SyncShown(); // 開いた瞬間の一斉フラッシュ防止（現状を記録してからRefresh）
+        Refresh();   // 最新の装備内容を反映
         if (bottleUI != null)
         {
-            bottleUI.SetRightHalf(true); // 装備画面と並べるため瓶を右半分に
+            bottleUI.SetRightHalf(true); // 装備画面と並べるため瓶を右1/3に
             bottleUI.OpenBottle();       // 自分の瓶も一緒に開く（右側で漁れる＝取り出して自動装備）
         }
     }
@@ -107,6 +143,18 @@ public class EquipmentUIController : MonoBehaviour
         open = false;
         if (panel != null) panel.SetActive(false);
         if (equipmentCamera != null) equipmentCamera.enabled = false;
+
+        // メインカメラを全画面・元の視点・元の描画距離に戻す。
+        var cam = mainCamera != null ? mainCamera : Camera.main;
+        if (cam != null)
+        {
+            cam.rect = savedCamRect;
+            cam.farClipPlane = savedFarClip;
+            cam.clearFlags = savedClearFlags;
+            cam.backgroundColor = savedBgColor;
+        }
+        if (tpsCamera != null) tpsCamera.EndCloseUp();
+
         if (bottleUI != null) bottleUI.CloseBottle(); // 一緒に閉じる
     }
 
@@ -136,13 +184,46 @@ public class EquipmentUIController : MonoBehaviour
             equipmentDisplay.UpdateDisplay(equipmentHolder, positions);
         }
 
-        // 名前テキストも併用する場合のみ更新（labelが無ければ無視＝3Dモデル表示だけでもよい）。
+        // 名前テキスト更新＋装備が変わったスロットはフラッシュ（「取り出す→自動装備」を視覚で伝える）。
         foreach (var sv in slotViews)
         {
-            if (sv.label == null) continue;
             var item = equipmentHolder.Get(sv.slot);
+            shown.TryGetValue(sv.slot, out var prev);
+            if (!ReferenceEquals(prev, item))
+            {
+                shown[sv.slot] = item;
+                if (open && item != null && sv.button != null && sv.button.image != null)
+                    StartCoroutine(FlashSlot(sv.button.image));
+            }
+            if (sv.label == null) continue;
             sv.label.text = item != null ? item.ItemName : "(空)";
         }
+    }
+
+    // 現状の装備を記録だけする（開いた瞬間に全スロットがフラッシュするのを防ぐ）。
+    private void SyncShown()
+    {
+        if (equipmentHolder == null) return;
+        foreach (var sv in slotViews) shown[sv.slot] = equipmentHolder.Get(sv.slot);
+    }
+
+    // スロット枠を一瞬ハイライトして「装備された」ことを伝える。
+    private IEnumerator FlashSlot(Graphic g)
+    {
+        if (g == null || !flashing.Add(g)) yield break;
+        Color baseColor = g.color;
+        var highlight = new Color(1f, 0.92f, 0.4f, baseColor.a);
+        const float DUR = 0.45f;
+        float t = 0f;
+        while (t < DUR && g != null)
+        {
+            t += Time.deltaTime;
+            float k = 1f - Mathf.Abs(2f * (t / DUR) - 1f); // 0→1→0の山なり
+            g.color = Color.Lerp(baseColor, highlight, k);
+            yield return null;
+        }
+        if (g != null) g.color = baseColor;
+        flashing.Remove(g);
     }
 
     // スロット枠(UI)の中心位置 → 装備カメラ前のワールド位置に変換する。

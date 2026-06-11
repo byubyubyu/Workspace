@@ -17,6 +17,13 @@ public class Hurtbox : MonoBehaviour
         Owner = owner;
     }
 
+    // 被弾の受け口。Hitboxはここを呼ぶ（Ownerを直接呼ばない）。
+    //   既定は素通し（従来挙動）。部位の倍率・部位HPはPartHurtboxがoverrideして差し込む。
+    public virtual void TakeHit(BattleInfo info)
+    {
+        Owner?.TakeDamage(info);
+    }
+
     // i-frame用：falseで自分のColliderを無効化（Hitboxに当たらなくなる＝無敵）。
     public void SetVulnerable(bool vulnerable)
     {

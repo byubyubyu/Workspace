@@ -52,6 +52,9 @@ public class Bottle : MonoBehaviour
     //   ※ 以前は即使用していたが、段階2から「手に持つ→左クリックで使う」に変更。
     public event Action<ItemData> OnItemTakenOut;
 
+    // 中身が増減した（Register/Unregister 直後）。商人UIの受け皿が支払い個数を再計算するため購読する。
+    public event Action OnItemsChanged;
+
     public BottleData Data => data;
     public IReadOnlyList<BottleItemCore> Items => items;
 
@@ -216,16 +219,31 @@ public class Bottle : MonoBehaviour
         return transform.TransformPoint(new Vector3(0f, h + dropHeightMargin, 0f));
     }
 
+    // 落下開始位置（口の上・横位置ランダム）。受け皿のように中身を散らして置きたい時に使う。
+    //   壁ぎわ(wallAvoid)は避ける＝アイテムが壁に挟まって立つ事故の防止。幅が狭ければ中央と同じ。
+    public Vector3 GetRandomDropPosition(float wallAvoid = 0.5f)
+    {
+        float h = data != null ? data.InnerHeight : 0f;
+        float w = data != null ? data.InnerWidth : 0f;
+        float half = Mathf.Max(0f, w * 0.5f - wallAvoid);
+        float x = UnityEngine.Random.Range(-half, half);
+        return transform.TransformPoint(new Vector3(x, h + dropHeightMargin, 0f));
+    }
+
     // --- 中身の管理 ---
 
     public void Register(BottleItemCore item)
     {
-        if (item != null && !items.Contains(item)) items.Add(item);
+        if (item != null && !items.Contains(item))
+        {
+            items.Add(item);
+            OnItemsChanged?.Invoke();
+        }
     }
 
     public void Unregister(BottleItemCore item)
     {
-        items.Remove(item);
+        if (items.Remove(item)) OnItemsChanged?.Invoke();
     }
 
     // --- ゾーンからの通知（BottleZoneが呼ぶ） ---

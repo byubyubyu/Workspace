@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 730938fef0e913a4fa25b0bcbd0f3e91, type: 3}
+  m_Name: PartData_DemonForeleg_Lv2
+  m_EditorClassIdentifier: Assembly-CSharp::PartData
+  partName: "\u92ED\u3044\u524D\u811A"
+  tier: 2
+  partPrefab: {fileID: 2876752221506647914, guid: 0a606fe93b7ac8d41bfef19b6375dfd2, type: 3}
+  damageMultiplier: 1
+  partHp: 35
+  breakStaggerBonus: 5
+  regenTime: 60
+  hpBonus: 0
+  defenseBonus: 0
+  attackPowerBonus: 6
+  moveSpeedBonus: 0
+  grantedMoves:
+  - {fileID: 11400000, guid: aa662a5231ac4414384c8ee3b13ab30f, type: 2}
+  - {fileID: 11400000, guid: 3f871964d0d8b6a41b2c6fb220e86e5c, type: 2}
+  evolutions: []

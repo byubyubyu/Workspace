@@ -10,7 +10,13 @@ public class Base : MonoBehaviour
     [SerializeField] private Color gridGizmoColor = new Color(0.2f, 0.8f, 1f, 0.6f); // Gizmoの格子色（Inspectorで変更可）
 
     public Vector2Int GridSize => gridSize;
+    public float CellSize => cellSize;
     public List<Path> Paths => paths;
+
+    // グリッド全体の中央（ワールド座標）。transform.positionは左下隅なので、
+    // ミニマップ表示などBaseの「代表点」が欲しい時はこちらを使う（グリッドサイズが変わっても常に中央）。
+    public Vector3 GridCenterWorld =>
+        transform.position + new Vector3(gridSize.x * cellSize * 0.5f, 0f, gridSize.y * cellSize * 0.5f);
 
     // マス座標(Vector2Int) → ワールド座標(Vector3) の変換。
     // Base 自身の位置をグリッド左下の基準点とし、指定マスの「中心」のワールド座標を返す。

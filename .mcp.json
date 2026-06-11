@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "funplay": {
+      "type": "http",
+      "url": "http://127.0.0.1:8765/"
+    },
+    "comfyui": {
+      "command": "npx",
+      "args": ["-y", "comfyui-mcp"],
+      "env": {
+        "COMFYUI_URL": "http://127.0.0.1:8188",
+        "COMFYUI_PATH": "E:\\ai\\Data\\Packages\\ComfyUI",
+        "CIVITAI_API_TOKEN": ""
+      }
+    }
+  }
+}

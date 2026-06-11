@@ -32,6 +32,11 @@ public class ItemData : ScriptableObject, IItemData
     // 瓶での見た目の目標サイズは ItemData.Size の最大辺から自動導出する（当たり判定に合わせる）。
     //   別途微調整したくなったら、ここに bottleViewSize を足す（今は不要）。
 
+    [Header("マップでの寿命")]
+    // マップに落ちてから自然に消えるまでの秒数（こぼれ・ドロップ品の掃除。0=消えない。
+    //   初期配置（FixedItemSpawner）はpersistent扱いで、この値に関わらず消えない）。
+    [SerializeField] private float mapLifetime = 120f;
+
     [Header("効果（差込口・null可）")]
     [SerializeField] private ItemEffect effect;
 
@@ -46,6 +51,7 @@ public class ItemData : ScriptableObject, IItemData
     public float Friction => friction;
     public GameObject Prefab => prefab;
     public float MapViewSize => mapViewSize;
+    public float MapLifetime => mapLifetime;
     // 瓶での見た目目標サイズ＝Sizeの最大辺（当たり判定に合わせる）。
     public float BottleViewSize => Mathf.Max(size.x, size.y);
     public ItemEffect Effect => effect;

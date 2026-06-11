@@ -15,13 +15,35 @@ MonoBehaviour:
   moveSpeed: 2
   wanderInterval: 3
   prefab: {fileID: 2609530451200212745, guid: 33f4f37bb1f279d4da5e99e037a57f72, type: 3}
+  skillData: {fileID: 11400000, guid: f5b9c81e01536e8418c34736ff945d66, type: 2}
   goods:
   - item: {fileID: 11400000, guid: aa96cc80a41d869488c5fe57ec335a6e, type: 2}
-    price: 1
+    priceItem: {fileID: 11400000, guid: 1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f60, type: 2}
+    priceCount: 1
     stock: 5
   - item: {fileID: 11400000, guid: 2bde8fc2585319a4b96fb1a391258f2e, type: 2}
-    price: 3
-    stock: 1
+    priceItem: {fileID: 11400000, guid: 1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f60, type: 2}
+    priceCount: 3
+    stock: 3
   - item: {fileID: 11400000, guid: 1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f60, type: 2}
-    price: 0
+    priceItem: {fileID: 11400000, guid: 1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f60, type: 2}
+    priceCount: 0
     stock: 10
+  buyGoods:
+  - item: {fileID: 11400000, guid: aa96cc80a41d869488c5fe57ec335a6e, type: 2}
+    priceItem: {fileID: 11400000, guid: 1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f60, type: 2}
+    priceCount: 2
+    stock: 10
+  - item: {fileID: 11400000, guid: 2bde8fc2585319a4b96fb1a391258f2e, type: 2}
+    priceItem: {fileID: 11400000, guid: 1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f60, type: 2}
+    priceCount: 5
+    stock: 3
+  unlistedPriceItem: {fileID: 11400000, guid: 1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f60, type: 2}
+  unlistedPriceCount: 1
+  portraitNormal: {fileID: 2800000, guid: a721c8583cfadf8418c9b055c0cd3ad8, type: 3}
+  portraitHappy: {fileID: 2800000, guid: 0ba2d4aeb50477a4aa5cd8fa2ab250d4, type: 3}
+  portraitSad: {fileID: 2800000, guid: 78768caeaf114dc49a57241a20788111, type: 3}
+  lineGreeting: "\u3044\u3089\u3063\u3057\u3083\u3044\u307E\u305B"
+  lineThanks: "\u3042\u308A\u304C\u3068\u3046\uFF01"
+  lineCancel: "\u3084\u3081\u3061\u3083\u3046\u306E\uFF1B\uFF1B"
+  lineRefuse: "\u305D\u308C\u306F\u8CB7\u3044\u53D6\u308C\u307E\u305B\u3093\uFF01"

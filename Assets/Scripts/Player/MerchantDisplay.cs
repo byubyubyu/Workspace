@@ -10,12 +10,22 @@ public class MerchantDisplay : MonoBehaviour
 {
     [SerializeField] private float viewSize = 1f; // 表示モデルの目標サイズ（最大辺・カメラ画角に合わせて調整）
 
+    // ListView / DetailView で大きさを切り替えるため、外から設定可能にする。
+    public float ViewSize { get => viewSize; set => viewSize = value; }
+
     // 各スロット位置に今出ている見た目モデル（作り直し用に保持）。indexはStockのindexに対応。
     private readonly List<GameObject> models = new List<GameObject>();
 
     // 在庫の品＋各スロットのワールド位置に合わせてモデルを生成し直す。
     //   itemsとworldPositionsは同じ長さ・同じindexで対応する（呼び出し側が揃える）。
     public void UpdateDisplay(IReadOnlyList<ItemData> items, IReadOnlyList<Vector3> worldPositions)
+    {
+        UpdateDisplay(items, worldPositions, null);
+    }
+
+    // sizes 指定版：indexごとに表示サイズを変えられる（例：商品は大きく・支払いアイテムは小さく）。
+    //   sizes が null または要素不足のindexは viewSize を使う。
+    public void UpdateDisplay(IReadOnlyList<ItemData> items, IReadOnlyList<Vector3> worldPositions, IReadOnlyList<float> sizes)
     {
         if (items == null || worldPositions == null) return;
 
@@ -33,7 +43,8 @@ public class MerchantDisplay : MonoBehaviour
             var model = Instantiate(item.Prefab, transform);
             model.transform.position = worldPositions[i];   // UI枠から逆算したワールド位置
             model.transform.localRotation = Quaternion.identity;
-            ItemViewScaler.FitToSize(model, viewSize);
+            float size = (sizes != null && i < sizes.Count) ? sizes[i] : viewSize;
+            ItemViewScaler.FitToSize(model, size);
             SetLayerRecursively(model, gameObject.layer);   // 商人カメラに写るようレイヤーを合わせる
             models.Add(model);
         }

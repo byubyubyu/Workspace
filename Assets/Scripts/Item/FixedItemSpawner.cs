@@ -39,7 +39,7 @@ public class FixedItemSpawner : MonoBehaviour, IItemSpawner
 
             // 生成はFactoryに依頼（生成のみ）。初期化は呼び出し側＝ここで行う。
             MapItemCore core = mapItemFactory.Create(p.data, p.position);
-            if (core != null) core.Initialize(p.data);
+            if (core != null) core.Initialize(p.data, persistent: true); // 初期配置は時限消滅しない（有限資源）
         }
     }
 

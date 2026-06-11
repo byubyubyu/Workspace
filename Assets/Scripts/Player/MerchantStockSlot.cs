@@ -13,7 +13,8 @@ using UnityEngine.UI;
 public class MerchantStockSlot : MonoBehaviour
 {
     [SerializeField] private RectTransform itemFrame;    // 売る品の3Dモデル表示枠
-    [SerializeField] private RectTransform priceFrame;   // 支払いアイテムの3Dモデル表示枠
+    [SerializeField] private Text itemNameLabel;         // 商品名（品3Dの右）
+    [SerializeField] private RectTransform priceFrame;   // 支払いアイテムの3Dモデル表示枠（商品名の下）
     [SerializeField] private Text priceCountLabel;       // 支払い必要個数（「x5」）
     [SerializeField] private Text stockLabel;            // 残在庫数（「x3」）
     [SerializeField] private Button buyButton;           // 買う（段階3-1は表示のみ）
@@ -24,6 +25,8 @@ public class MerchantStockSlot : MonoBehaviour
     public MerchantStockEntry Entry { get; private set; }
 
     // MerchantUIControllerが生成時に呼ぶ。個数・在庫を表示し、ボタンの押下時コールバックを差し込む。
+    //   段階3-3：行全体クリックで購入予定にする方針のため、buyButton をスロット全体まで広げ、Buy テキストと
+    //   ボタン背景画像は隠す（クリック判定だけ使う）。スロット背景はスロット側の Image に任せる。
     public void Setup(MerchantStockEntry entry, System.Action<MerchantStockEntry> onBuy)
     {
         Entry = entry;
@@ -31,6 +34,27 @@ public class MerchantStockSlot : MonoBehaviour
 
         if (buyButton != null)
         {
+            // スロット全体をクリック領域に広げる
+            var rt = buyButton.GetComponent<RectTransform>();
+            if (rt != null)
+            {
+                rt.anchorMin = Vector2.zero;
+                rt.anchorMax = Vector2.one;
+                rt.offsetMin = Vector2.zero;
+                rt.offsetMax = Vector2.zero;
+            }
+            // 「Buy」テキストは非表示（行全体クリックなので不要）
+            var labelText = buyButton.GetComponentInChildren<Text>(true);
+            if (labelText != null) labelText.enabled = false;
+            // ボタンの背景画像を透明に（スロットの絵を邪魔しない）
+            var btnImage = buyButton.GetComponent<Image>();
+            if (btnImage != null)
+            {
+                var c = btnImage.color;
+                c.a = 0f;
+                btnImage.color = c;
+            }
+
             buyButton.onClick.RemoveAllListeners();
             if (onBuy != null && entry != null)
                 buyButton.onClick.AddListener(() => onBuy(entry));
@@ -41,6 +65,7 @@ public class MerchantStockSlot : MonoBehaviour
     public void Refresh()
     {
         if (Entry == null) return;
+        if (itemNameLabel != null) itemNameLabel.text = Entry.item != null ? Entry.item.ItemName : "";
         if (priceCountLabel != null) priceCountLabel.text = $"x{Entry.priceCount}";
         if (stockLabel != null) stockLabel.text = $"x{Entry.stock}";
         if (buyButton != null) buyButton.interactable = Entry.stock > 0;

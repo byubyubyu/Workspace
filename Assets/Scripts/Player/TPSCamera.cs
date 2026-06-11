@@ -15,6 +15,45 @@ public class TPSCamera : MonoBehaviour
     private float yaw;
     private float pitch;
 
+    // 追従対象を切り替える（陣営選択でプレイヤーが決まった時にFactionSelectUIが呼ぶ）。
+    public void SetTarget(Transform newTarget)
+    {
+        target = newTarget;
+        if (target != null) yaw = target.eulerAngles.y + 180f; // 新しいキャラの背後に回り込む
+    }
+
+    // 装備画面のクローズアップ状態（開始時の視点を保存し、閉じたら戻す）。
+    private bool closeUp;
+    private float savedDistance, savedPitch, savedYaw, savedHeight;
+    private const float CloseUpMinDistance = 0.8f; // クローズアップ中だけ通常のminDistanceより寄れる
+
+    // 装備画面用：自キャラ正面の寄りカメラへ切り替える（右ドラッグ回転・ホイールズームは効いたまま）。
+    //   closeHeight＝注視点の高さ（通常heightより低くして胸あたりを画面中央に）。
+    public void BeginCloseUp(float closeDistance, float closePitch, float closeHeight)
+    {
+        if (closeUp) return;
+        closeUp = true;
+        savedDistance = distance;
+        savedPitch = pitch;
+        savedYaw = yaw;
+        savedHeight = height;
+        distance = Mathf.Clamp(closeDistance, CloseUpMinDistance, maxDistance);
+        pitch = Mathf.Clamp(closePitch, minPitch, maxPitch);
+        height = closeHeight;
+        if (target != null) yaw = target.eulerAngles.y + 180f; // キャラの正面に回り込む
+    }
+
+    // クローズアップを終了し、元の視点に戻す。
+    public void EndCloseUp()
+    {
+        if (!closeUp) return;
+        closeUp = false;
+        distance = savedDistance;
+        pitch = savedPitch;
+        yaw = savedYaw;
+        height = savedHeight;
+    }
+
     private void Start()
     {
         yaw = transform.eulerAngles.y;
@@ -44,7 +83,7 @@ public class TPSCamera : MonoBehaviour
             // ホイールでズーム
             float scroll = mouse.scroll.ReadValue().y;
             distance -= scroll * 0.01f; // 新方式のscrollは値が大きいので係数を小さく
-            distance = Mathf.Clamp(distance, minDistance, maxDistance);
+            distance = Mathf.Clamp(distance, closeUp ? CloseUpMinDistance : minDistance, maxDistance);
         }
 
         Quaternion rotation = Quaternion.Euler(pitch, yaw, 0f);

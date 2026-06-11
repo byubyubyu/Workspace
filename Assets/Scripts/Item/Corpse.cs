@@ -8,6 +8,9 @@ using UnityEngine;
 [RequireComponent(typeof(InventoryHolder))]
 public class Corpse : MonoBehaviour
 {
+    // 生存中の全死体（自己申告レジストリ）。検索側（Devourer/ItemPicker/CorpseSpawner）はNearestFinder.Findで選ぶ。
+    public static readonly System.Collections.Generic.List<Corpse> All = new System.Collections.Generic.List<Corpse>();
+
     [SerializeField] private float lifetime = 30f; // 残存時間（秒）
 
     private InventoryHolder holder;
@@ -15,10 +18,22 @@ public class Corpse : MonoBehaviour
 
     public InventoryHolder Holder => holder;
 
+    // 出自（誰の死体か）。CorpseSpawnerが生成時に設定する実行時の事実。
+    //   Team.None＝野生モンスター／それ以外＝国に属する者（兵士等）。魂ポイントの倍率判定（DemonSoul）が読む。
+    public Team SourceTeam { get; private set; }
+
+    public void SetSource(Team team)
+    {
+        SourceTeam = team;
+    }
+
     private void Awake()
     {
         holder = GetComponent<InventoryHolder>();
     }
+
+    private void OnEnable() { All.Add(this); }
+    private void OnDisable() { All.Remove(this); } // 破棄時も呼ばれる＝解除漏れなし
 
     private void Update()
     {

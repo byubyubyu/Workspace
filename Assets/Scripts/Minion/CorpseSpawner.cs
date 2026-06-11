@@ -17,7 +17,6 @@ public class CorpseSpawner : MonoBehaviour
 
     private MinionCore core;
     private InventoryHolder holder; // 兵士自身の中身（死亡時に死体へ移す）
-    private static readonly Collider[] corpseHits = new Collider[16];
 
     private void Awake()
     {
@@ -43,6 +42,10 @@ public class CorpseSpawner : MonoBehaviour
         // 兵士の中身（records＋pendingItems）を死体へ移譲する（兵士にholderが無ければ空のまま）。
         var corpseHolder = obj.GetComponent<InventoryHolder>();
         if (corpseHolder != null && holder != null) corpseHolder.CopyFrom(holder);
+
+        // 出自（Team）を死体に記録する（魂ポイントの倍率判定用。野生=None／兵士=国のTeam）。
+        var corpse = obj.GetComponent<Corpse>();
+        if (corpse != null) corpse.SetSource(core.Team);
     }
 
     // 死亡位置に既存の死体が重なっていたら、周囲の空いた位置を探して返す（見つからなければ元の位置で妥協）。
@@ -58,14 +61,9 @@ public class CorpseSpawner : MonoBehaviour
         return origin;
     }
 
-    // pos の周囲(corpseSpacing)に既存の死体(タグ"Corpse")があるか。
+    // pos の周囲(corpseSpacing)に既存の死体があるか（自己申告レジストリ＝Corpse.Allから判定）。
     private bool HasCorpseNear(Vector3 pos)
     {
-        int count = Physics.OverlapSphereNonAlloc(pos, corpseSpacing, corpseHits);
-        for (int i = 0; i < count; i++)
-        {
-            if (corpseHits[i] != null && corpseHits[i].CompareTag("Corpse")) return true;
-        }
-        return false;
+        return NearestFinder.Find(Corpse.All, pos, corpseSpacing) != null;
     }
 }

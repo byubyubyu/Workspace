@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4748c42e00793f3438d1e3bb138d5611, type: 3}
+  m_Name: SkillData_Sword
+  m_EditorClassIdentifier: Assembly-CSharp::SkillData
+  skillName: "\u935B\u3048\u305F\u5263\u6280"
+  isBodily: 0
+  hpPerPoint: 0
+  attackPerPoint: 0.1
+  damageCutPerPoint: 0
+  gainOnHit: 1
+  gainOnDamaged: 0

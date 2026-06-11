@@ -81,9 +81,9 @@ public class MinionCore : MonoBehaviour, IBattleInfo, IHealth
             else dodge.Initialize(data.Dodge);
         }
 
-        // 子のHurtboxに自分(IBattleInfo)を渡す（HitboxがここからCoreを取得してダメージを渡す）。
-        var hurtbox = GetComponentInChildren<Hurtbox>(true);
-        if (hurtbox != null) hurtbox.SetOwner(this);
+        // 子のHurtbox（部位制なら複数）に自分(IBattleInfo)を渡す（HitboxがここからCoreを取得してダメージを渡す）。
+        foreach (var hurtbox in GetComponentsInChildren<Hurtbox>(true))
+            hurtbox.SetOwner(this);
 
         // 初期インベントリ（瓶の中身）を InventoryHolder に渡す（持つ兵士のみ・死体を漁る用）。
         var holder = GetComponent<InventoryHolder>();

@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b56bff0a9575ddd42b8dc4096afa9f32, type: 3}
+  m_Name: SkillCatalog_Player
+  m_EditorClassIdentifier: Assembly-CSharp::SkillCatalog
+  skills:
+  - {fileID: 11400000, guid: 9728d808337e5a641b08f348c45ef1b3, type: 2}
+  - {fileID: 11400000, guid: 880d8be09b8484e4babfb5f88727c32a, type: 2}
+  - {fileID: 11400000, guid: 9773c37af93783c4280a9fed26df7641, type: 2}
+  totalTrainCap: 100
+  maxSkillValue: 100

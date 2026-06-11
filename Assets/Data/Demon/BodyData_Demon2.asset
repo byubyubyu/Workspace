@@ -1,0 +1,47 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 18dd5cfbe3e559743b930941738a9f51, type: 3}
+  m_Name: BodyData_Demon2
+  m_EditorClassIdentifier: Assembly-CSharp::BodyData
+  bodyName: "\u4E2D\u578B"
+  bodyPrefab: {fileID: 7531598685368600855, guid: e26f3f61e95ca93419c130f81bb4c324, type: 3}
+  scale: 1.4
+  vitality: {fileID: 11400000, guid: 79a40401fb66979408034550d9fa1779, type: 2}
+  stamina: {fileID: 11400000, guid: 2e698a18926aaa647bdbe04d3171d4d6, type: 2}
+  attackPower: 9
+  staggerThreshold: 4
+  bigStaggerDuration: 1.5
+  maxPartTier: 3
+  slots:
+  - slotName: "\u982D"
+    partObjectNames:
+    - Head
+    initialPart: {fileID: 11400000, guid: aa3c68ff9b755224ba29ac1f6bee1326, type: 2}
+  - slotName: "\u80F4"
+    partObjectNames:
+    - Body
+    initialPart: {fileID: 11400000, guid: 616aa4b93f66f5d4490764a43d8ce26e, type: 2}
+  - slotName: "\u524D\u811A"
+    partObjectNames:
+    - Leg_FL
+    - Leg_FR
+    initialPart: {fileID: 11400000, guid: 59b93c4ed625f964c9c3859b4eaa7caf, type: 2}
+  - slotName: "\u5F8C\u811A"
+    partObjectNames:
+    - Leg_BL
+    - Leg_BR
+    initialPart: {fileID: 11400000, guid: bd6f10bb14a0d5442ab68ba8ffab4162, type: 2}
+  - slotName: "\u5C3B\u5C3E"
+    partObjectNames:
+    - Tail
+    initialPart: {fileID: 11400000, guid: f916bf3b89e0fb741a7316605c76789e, type: 2}
+  requiredSoulPoints: 50

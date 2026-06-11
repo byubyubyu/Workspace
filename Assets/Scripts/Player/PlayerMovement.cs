@@ -56,6 +56,12 @@ public class PlayerMovement : MonoBehaviour, IDasher
         speedStat.SetBonus(equipmentHolder != null ? equipmentHolder.TotalMoveSpeedBonus : 0f);
     }
 
+    // 装備以外からの移動速度補正の公開口（魔族＝部位の補正Σ。人間は装備イベント（ApplyEquipment）経由のまま）。
+    public void SetMoveSpeedBonus(float bonus) => speedStat.SetBonus(bonus);
+
+    // 基礎速度への乗数（加齢の老衰など）。装備補正(bonus)には掛からない＝素の身体だけ衰える。
+    public void SetBaseSpeedMultiplier(float multiplier) => speedStat.SetBaseMultiplier(multiplier);
+
     private void Update()
     {
         // 攻撃中は移動入力を受け付けない（重い一撃。GDD「攻撃中は移動不可」）。
