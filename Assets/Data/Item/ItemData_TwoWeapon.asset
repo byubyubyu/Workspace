@@ -13,11 +13,13 @@ MonoBehaviour:
   m_Name: ItemData_TwoWeapon
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
   itemName: TwoHandWeapon
+  currencyValue: 0
   shape: 2
-  size: {x: 1, y: 1}
+  size: {x: 0.35, y: 1.5}
   mass: 1
   friction: 0.4
-  prefab: {fileID: 1641577825879702806, guid: 3393708608c8efb4592988c0af6a12ab, type: 3}
-  mapViewSize: 1
+  prefab: {fileID: 5517119912580400742, guid: 6528ff79bc681ab43982385b5af05134, type: 3}
+  mapViewSize: 1.2
+  mapLifetime: 120
   effect: {fileID: 0}
   equipment: {fileID: 11400000, guid: edbd34a6fc64e464a8e8fd28c86f4ff2, type: 2}

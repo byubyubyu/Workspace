@@ -19,5 +19,6 @@ MonoBehaviour:
   staggerDuration: 3
   reach: 3
   staminaCost: 10
+  motionId: TwoHand
   swingEffect: {fileID: 6188706574630452542, guid: c9c812742f7841b46b53bfbd44663300, type: 3}
   hitEffect: {fileID: 6188706574630452542, guid: b3a328c6f894f0e4e82bb4fe4d69f751, type: 3}

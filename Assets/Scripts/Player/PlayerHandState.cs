@@ -33,10 +33,13 @@ public class PlayerHandState : MonoBehaviour
 
     [Header("見た目")]
     [SerializeField] private Transform handPoint;           // 武器/アイテムを出す位置（Playerの子）
+    [SerializeField] private Transform backPoint;           // 納刀中の武器を背負う位置（Playerの子・任意）
     [SerializeField] private GameObject weaponPrefab;       // 武器の見た目（仮でCube等。後で本物に差し替え可）
 
     [Header("抜刀")]
     [SerializeField] private float drawDuration = 1f;       // 抜刀にかかる時間＝隙（秒）。仮・後調整
+    [SerializeField] private float sheatheViewLinger = 0.75f; // 納刀時に武器の見た目を消すまでの時間（納刀モーション尺に合わせる）
+    [SerializeField] private Vector3 drawViewEuler = Vector3.zero; // 抜刀モーション中だけ武器に足す回転（刃先を上向きに）
     [SerializeField] private GameObject drawEffect;         // 抜刀時のエフェクト（任意・null可）
     [SerializeField] private AudioClip drawSound;           // 抜刀音（任意・null可）
 
@@ -126,7 +129,7 @@ public class PlayerHandState : MonoBehaviour
     }
 
     // 抜刀を開始する（Empty左クリック）。Drawingに入り、タイマーと演出を起動する。
-    //   抜刀中(Drawing)は武器を見せず手ぶらのまま。武器はWeaponになってから出す（RefreshView）。
+    //   武器の見た目は抜刀モーション開始と同時に出す（RefreshViewのDrawingケース）。
     private void StartDraw()
     {
         if (!HasWeapon()) return; // 武器が無ければ抜刀できない（技がないと構えても攻撃できないため）
@@ -140,10 +143,13 @@ public class PlayerHandState : MonoBehaviour
     }
 
     // 装備が変わったとき：武器が無くなったら納刀する（Weapon/Drawingを解除）。
+    //   状態が変わらないケース（手ぶらで武器を装備した等）でも背中の表示は更新する。
     private void OnEquipmentChanged()
     {
         if (!HasWeapon() && (state == HandState.Weapon || state == HandState.Drawing))
             SetState(HandState.Empty);
+        else
+            RefreshBackView();
     }
 
     // 武器を装備しているか（右手に武器の技セットがあるか）。
@@ -201,8 +207,10 @@ public class PlayerHandState : MonoBehaviour
     private void SetState(HandState next)
     {
         if (state == next && currentView != null) return; // 同状態なら作り直さない（Weapon連打で再生成しない）
+        // 納刀（構え→手ぶら）だけは武器の見た目を納刀モーションが終わるまで残す。
+        bool sheathing = state == HandState.Weapon && next == HandState.Empty;
         state = next;
-        RefreshView();
+        RefreshView(sheathing);
     }
 
     // 納刀（武器をしまう）。走り出したときにPlayerMovementから呼ばれる。
@@ -221,12 +229,24 @@ public class PlayerHandState : MonoBehaviour
     }
 
     // 状態に応じた見た目を HandPoint に出し分ける（今のを消して作り直す）。
-    private void RefreshView()
+    private GameObject lingeringView; // 納刀モーション中だけ残している武器（遅延破棄待ち）
+    private void RefreshView() => RefreshView(false);
+    private void RefreshView(bool sheathing)
     {
-        // 既存の見た目を消す。
+        // 既存の見た目を消す。納刀時だけは納刀モーションが終わるまで残す（遅延破棄）。
         if (currentView != null)
         {
-            Destroy(currentView);
+            if (sheathing)
+            {
+                lingeringView = currentView;
+                // 納刀モーション中は抜刀時と同じ「刃先上向き」にする（肩越しに戻す動きと合わせる）。
+                lingeringView.transform.localRotation = Quaternion.Euler(drawViewEuler);
+                Destroy(currentView, sheatheViewLinger);
+            }
+            else
+            {
+                Destroy(currentView);
+            }
             currentView = null;
         }
 
@@ -234,13 +254,21 @@ public class PlayerHandState : MonoBehaviour
 
         switch (state)
         {
-            // Drawing（抜刀中）は武器を出さない＝手ぶらのまま（defaultに落ちる）。抜き終わってWeaponで出す。
+            // Drawing（抜刀中）：手に持たせるが、刃先は上向き（drawViewEuler）＝背中から抜いている途中の見た目。
+            // Weaponになったら通常の構え向き（identity）で作り直す。
+            case HandState.Drawing:
             case HandState.Weapon:
+                if (lingeringView != null)
+                {
+                    Destroy(lingeringView); // 納刀の残像が残っていたら即消す（連続抜刀の二重表示防止）
+                    lingeringView = null;
+                }
                 if (weaponPrefab != null)
                 {
                     currentView = Instantiate(weaponPrefab, handPoint);
                     currentView.transform.localPosition = Vector3.zero;
-                    currentView.transform.localRotation = Quaternion.identity;
+                    currentView.transform.localRotation =
+                        state == HandState.Drawing ? Quaternion.Euler(drawViewEuler) : Quaternion.identity;
                 }
                 break;
 
@@ -257,8 +285,31 @@ public class PlayerHandState : MonoBehaviour
 
             case HandState.Empty:
             default:
-                // 何も出さない。
+                // 手には何も出さない。
                 break;
+        }
+
+        // 背中の武器表示を更新（納刀時は納刀モーションが終わってから背負う）。
+        CancelInvoke(nameof(RefreshBackView));
+        if (sheathing) Invoke(nameof(RefreshBackView), sheatheViewLinger);
+        else RefreshBackView();
+    }
+
+    // 背中の武器：装備していて手に持っていない（Empty/Item）あいだだけ背負う。
+    private GameObject backView;
+    private void RefreshBackView()
+    {
+        if (backView != null)
+        {
+            Destroy(backView);
+            backView = null;
+        }
+        bool show = HasWeapon() && (state == HandState.Empty || state == HandState.Item);
+        if (show && weaponPrefab != null && backPoint != null)
+        {
+            backView = Instantiate(weaponPrefab, backPoint);
+            backView.transform.localPosition = Vector3.zero;
+            backView.transform.localRotation = Quaternion.identity;
         }
     }
 }
