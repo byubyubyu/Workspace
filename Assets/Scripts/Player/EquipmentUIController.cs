@@ -30,6 +30,7 @@ public class EquipmentUIController : MonoBehaviour
     [SerializeField] private Camera uiCamera;               // Canvasのカメラ（Screen Space Overlayならnullのまま）
     [SerializeField] private float depth = 10f;             // 装備カメラからモデルを置く奥行き（near〜far内で調整）
     [SerializeField] private Key toggleKey = Key.C;          // 開閉キー
+    [SerializeField] private StatusUIController statusUI;    // C画面からの遷移先（ステータス画面）
     [SerializeField] private List<SlotView> slotViews = new List<SlotView>(); // 5スロット分（右手/左手/頭/鎧/靴）
 
     [Header("左カラム＝メインカメラの寄り表示")]
@@ -39,6 +40,8 @@ public class EquipmentUIController : MonoBehaviour
     [SerializeField] private float closeUpPitch = 5f;       // 寄りの俯角
     [SerializeField] private float closeUpHeight = 1.2f;    // 注視点の高さ（低くするほどカメラ・画面中央が下がる）
     [SerializeField] private float closeUpFarClip = 8f;     // クローズアップ中の描画距離（キャラ周辺だけ描画＝それ以遠は虚空）
+    [SerializeField] private float closeUpViewWidth = 2f / 3f; // クローズアップが画面に占める幅（ホットスポットUI＝2カラム分）
+    [SerializeField] private float closeUpViewX = 1f / 6f;     // クローズアップの開始X（キャラを中央カラムに置くためのオフセット）
 
     private bool open;
     public bool IsOpen => open;
@@ -109,6 +112,14 @@ public class EquipmentUIController : MonoBehaviour
         else Open();
     }
 
+    // C画面→ステータス画面へ切り替える（HotspotLayerの「ステータス」ボタンから呼ばれる）。
+    public void SwitchToStatus()
+    {
+        if (!open || statusUI == null) return;
+        Close();
+        statusUI.OpenExternal();
+    }
+
     // 装備UI＋自分の瓶（右1/3）を開く。
     public void Open()
     {
@@ -126,7 +137,7 @@ public class EquipmentUIController : MonoBehaviour
             savedFarClip = cam.farClipPlane;
             savedClearFlags = cam.clearFlags;
             savedBgColor = cam.backgroundColor;
-            cam.rect = new Rect(0f, 0f, 1f / 3f, 1f);
+            cam.rect = new Rect(closeUpViewX, 0f, closeUpViewWidth, 1f);
             cam.farClipPlane = closeUpFarClip;
             cam.clearFlags = CameraClearFlags.SolidColor;
             cam.backgroundColor = Color.black;

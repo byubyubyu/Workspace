@@ -92,14 +92,23 @@ public class StatusUIController : MonoBehaviour
         var kb = Keyboard.current;
         if (kb != null && kb[toggleKey].wasPressedThisFrame)
         {
+            // Pキーは「閉じる」専用。開くのはC画面（装備）の「ステータス」ボタンからの遷移のみ。
             if (open) Close();
-            else if (!AnyOtherUIOpen()) Open(activeCore); // 他UI中のPは無視（画面切替は将来そろえる）
         }
 
         if (!open) return;
         if (AnyOtherUIOpen()) { Close(); return; } // 他UIが開いたら自分から閉じる（相互閉じ）
         CloseUpIsolator.Refresh(); // 装備変更等で見た目が作り直された時の当て直し（装備・進化画面と同じ）
         Refresh();
+    }
+
+    // 外部（C画面の「ステータス」ボタン）からの遷移用。呼び出し側が他UIを閉じてから呼ぶ。
+    public void OpenExternal()
+    {
+        if (open) return;
+        var activeCore = ActivePlayer.Exists ? ActivePlayer.Go.GetComponent<PlayerCombatCore>() : null;
+        if (activeCore == null || AnyOtherUIOpen()) return;
+        Open(activeCore);
     }
 
     private bool AnyOtherUIOpen()
