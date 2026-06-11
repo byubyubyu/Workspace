@@ -97,6 +97,8 @@ public class PlayerHandState : MonoBehaviour
 
     private void HandleLeftClick()
     {
+        // 統合メニュー中は攻撃も使用もしない（タブやマーカーのクリックと衝突するため）。
+        if (TabMenuController.Instance != null && TabMenuController.Instance.IsOpen) return;
         // インベントリ中は攻撃も使用もしない（漁り操作はBottleDraggerが別途処理する）。
         if (bottleUI != null && bottleUI.IsOpen) return;
         // ミニマップ（M画面）中も攻撃しない。

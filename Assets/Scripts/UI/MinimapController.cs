@@ -11,7 +11,7 @@ using UnityEngine.UI;
 using UnityEngine.InputSystem;
 using UnityEngine.EventSystems;
 
-public class MinimapController : MonoBehaviour
+public class MinimapController : MonoBehaviour, IMenuTab
 {
     [Header("参照")]
     [SerializeField] private World world;
@@ -27,7 +27,6 @@ public class MinimapController : MonoBehaviour
     [SerializeField] private Button quotaAddButton;           // この派遣先を追加（F1）
     [SerializeField] private Button quotaConfirmButton;       // 全発令（溜めた全指示先を一括送信）
     [SerializeField] private Text pendingSummaryLabel;        // 追加済み指示の一覧表示（任意・未設定可）
-    [SerializeField] private EquipmentUIController equipmentUI; // C画面中のM＝装備をキャンセルしてMを開くため
 
     [Header("操作")]
     [SerializeField] private Key toggleKey = Key.M;
@@ -82,10 +81,18 @@ public class MinimapController : MonoBehaviour
     // 外部（I/Cキー処理）からM画面を閉じる（キャンセル）。
     public void Close() => SetOpen(false);
 
+    // --- IMenuTab（人間側＝統合メニューの「マップ」タブとして呼ばれる） ---
+    public void TabShow() => SetOpen(true);
+    public void TabHide() => SetOpen(false);
+
     private void Update()
     {
         var kb = Keyboard.current;
-        if (kb != null && kb[toggleKey].wasPressedThisFrame)
+        // 人間操作中のMキーは統合メニュー（TabMenuController）が担当する（二重処理防止）。
+        //   ここのMキー処理は魔族操作中（メニュー外）のためだけに残している。
+        bool humanMenuActive = TabMenuController.Instance != null
+            && ActivePlayer.Exists && ActivePlayer.Go.GetComponent<DemonCore>() == null;
+        if (!humanMenuActive && kb != null && kb[toggleKey].wasPressedThisFrame)
         {
             // 商人UI中のMは取引キャンセル→ミニマップを開く（画面の切り替え）。
             if (MerchantUIController.Instance != null && MerchantUIController.Instance.IsOpen)
@@ -97,12 +104,6 @@ public class MinimapController : MonoBehaviour
             else if (EvolutionUIController.Instance != null && EvolutionUIController.Instance.IsOpen)
             {
                 EvolutionUIController.Instance.Close();
-                SetOpen(true);
-            }
-            // 装備画面（C）中のMは装備をキャンセル（瓶も一緒に閉じる）→ Mを開く。
-            else if (equipmentUI != null && equipmentUI.IsOpen)
-            {
-                equipmentUI.Close();
                 SetOpen(true);
             }
             // 瓶（I単独）中のMは瓶をキャンセル → Mを開く。

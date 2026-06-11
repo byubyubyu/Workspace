@@ -13,7 +13,7 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-public class BottleUIController : MonoBehaviour
+public class BottleUIController : MonoBehaviour, IMenuTab
 {
     [Header("参照")]
     [SerializeField] private GameObject bottlePanel;   // 瓶UIのパネル（RawImageを含む）
@@ -25,7 +25,6 @@ public class BottleUIController : MonoBehaviour
 
     [Header("入力")]
     [SerializeField] private Key toggleKey = Key.I;    // 開閉キー（仮：Inventory）
-    [SerializeField] private EquipmentUIController equipmentUI; // 装備画面中のIで装備を閉じて瓶を中央に開き直すため
     [SerializeField] private GameObject vignette;       // 丸切り抜き（I＝中央表示の時だけON。右側表示では消す）
 
     [Header("閉じる時の静止待ち")]
@@ -134,12 +133,13 @@ public class BottleUIController : MonoBehaviour
                 OpenBottle();
                 return;
             }
-            // 装備画面が開いている時のI：装備UI＋瓶を閉じてから、瓶を中央で単独で開き直す。
-            if (equipmentUI != null && equipmentUI.IsOpen)
+            // 統合メニューが開いている時のI：メニューを閉じて、瓶を中央で単独で開き直す
+            //   （瓶＝アクション用途。装備タブが一緒に開いていた瓶もメニュー側が閉じる）。
+            if (TabMenuController.Instance != null && TabMenuController.Instance.IsOpen)
             {
-                equipmentUI.Close(); // 装備UIと瓶を閉じる
+                TabMenuController.Instance.CloseMenu();
                 SetRightHalf(false);
-                OpenBottle();        // 瓶を中央で開く
+                OpenBottle();
             }
             else if (open) CloseBottle();
             else { SetRightHalf(false); OpenBottle(); } // Iキー単独＝中央（いつも通り）
@@ -150,6 +150,18 @@ public class BottleUIController : MonoBehaviour
     public void OpenBottle()
     {
         OpenBottle(OwnHolder);
+    }
+
+    // --- IMenuTab（統合メニューの「瓶」タブとして呼ばれる。直接Iの瓶と同じものへの別入口） ---
+    public void TabShow()
+    {
+        SetRightHalf(false); // タブ表示は中央
+        OpenBottle();
+    }
+
+    public void TabHide()
+    {
+        CloseBottle();
     }
 
     // 対象を指定して開く（段階4で死体の瓶もこれで開く）。キー or 拾った時に外から呼ぶ。

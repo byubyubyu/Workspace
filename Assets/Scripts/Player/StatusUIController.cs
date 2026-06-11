@@ -1,20 +1,20 @@
 // 保存先: Assets/Scripts/Player/StatusUIController.cs
-// ステータス画面（人間用・仮キーP）。グラフィカル版（進化画面と同じ3カラム文法・2026-06-11改修）。
+// ステータス画面（人間用・スキル設定）＝統合メニュー（TabMenuController）の「スキル」タブ。
 //   ・レイアウト：左＝メインカメラの寄り表示（実機キャラ＝装備が見える・装備画面と同じ流儀）／
 //     中央＝鍛錬合計バー＋スキル行（StatusSkillRowの動的生成。バッジ↑固↓・値バー・遺伝＋鍛錬内訳）／
 //     右＝年齢・能力値（HP/スタミナ/攻撃/防御/軽減。スキル由来分は「（+n）」併記）・武器のワザ一覧。
 //   ・読み取り専用＋唯一の書き込みが PlayerSkills.SetMode（スキル行クリックで ↑→固→↓ をトグル）。
 //     PlayerSkills/Age/Core/Stamina の公開プロパティを読むだけ＝一方向（進化・転生UIと同じ流儀）。
 //   ・人間操作中のみ（魔族は進化画面が実質ステータス画面）。ActivePlayerで判定。
-//   ・他UI（瓶/装備/M/商人/プロフィール）が開いている間はPを無視し、開いている最中に他UIが開いたら
-//     自分から閉じる（相互閉じと同じ結果を自分の監視で実現＝他UIのコードを触らない）。
+//   ・カメラ（クローズアップ）・キー入力・相互排他は TabMenuController が一元管理（2026-06-12統合）。
+//     ここはIMenuTab（TabShow/TabHide）でパネルの表示だけを担う。
 //   ・開いている間は毎フレーム更新（スキル値・年齢は常に動くため）。
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
-public class StatusUIController : MonoBehaviour
+public class StatusUIController : MonoBehaviour, IMenuTab
 {
     [Header("パネル")]
     [SerializeField] private GameObject panel;
@@ -31,17 +31,7 @@ public class StatusUIController : MonoBehaviour
     [SerializeField] private Text vitalValueLabel;     // 能力値の数値列（右寄せ＝桁が揃う。スキル由来は（+n）併記）
     [SerializeField] private Text movesLabel;          // 武器のワザ一覧（上詰め。武器なしなら「（武器なし）」）
 
-    [Header("左カラム＝メインカメラの寄り表示（装備画面と同じ流儀）")]
-    [SerializeField] private Camera mainCamera;        // 未設定ならCamera.main
-    [SerializeField] private TPSCamera tpsCamera;
-    [SerializeField] private float closeUpDistance = 2.5f;
-    [SerializeField] private float closeUpPitch = 5f;
-    [SerializeField] private float closeUpHeight = 1.2f;
-    [SerializeField] private float closeUpFarClip = 8f;
-    [SerializeField] private float leftColumnWidth = 0.3f;
-
-    [SerializeField] private EquipmentUIController equipmentUI; // 相互閉じ判定用（Instanceを持たないため参照で）
-    [SerializeField] private Key toggleKey = Key.P;
+    // ※ クローズアップ（カメラ）・キー入力・相互排他は TabMenuController が一元管理（2026-06-12統合）。
 
     private PlayerCombatCore core;
     private PlayerSkills skills;
@@ -50,14 +40,6 @@ public class StatusUIController : MonoBehaviour
     private EquipmentHolder equipment;
     private readonly List<StatusSkillRow> rows = new List<StatusSkillRow>();
     private bool open;
-
-    // メインカメラの復元用（装備・進化画面と同じ）。
-    private Rect savedCamRect = new Rect(0f, 0f, 1f, 1f);
-    private float savedFarClip;
-    private CameraClearFlags savedClearFlags;
-    private Color savedBgColor;
-    private int savedCullingMask;  // 開く前の描画レイヤー（自分以外を消すため絞る）
-    private bool cullingMaskSaved; // ※-1(Everything)が正規値のため、保存済みかはboolで判定
 
     public bool IsOpen => open;
     public static StatusUIController Instance { get; private set; }
@@ -81,44 +63,23 @@ public class StatusUIController : MonoBehaviour
 
     private void Update()
     {
-        // 人間を操作している時だけ対象（魔族中はPを無視し、開いていたら閉じる）。
-        var activeCore = ActivePlayer.Exists ? ActivePlayer.Go.GetComponent<PlayerCombatCore>() : null;
-        if (activeCore == null)
-        {
-            if (open) Close();
-            return;
-        }
-
-        var kb = Keyboard.current;
-        if (kb != null && kb[toggleKey].wasPressedThisFrame)
-        {
-            // Pキーは「閉じる」専用。開くのはC画面（装備）の「ステータス」ボタンからの遷移のみ。
-            if (open) Close();
-        }
-
         if (!open) return;
-        if (AnyOtherUIOpen()) { Close(); return; } // 他UIが開いたら自分から閉じる（相互閉じ）
-        CloseUpIsolator.Refresh(); // 装備変更等で見た目が作り直された時の当て直し（装備・進化画面と同じ）
-        Refresh();
+        Refresh(); // スキル値・年齢は常に動くため毎フレーム更新
     }
 
-    // 外部（C画面の「ステータス」ボタン）からの遷移用。呼び出し側が他UIを閉じてから呼ぶ。
-    public void OpenExternal()
+    // --- IMenuTab（TabMenuControllerから呼ばれる） ---
+
+    public void TabShow()
     {
         if (open) return;
         var activeCore = ActivePlayer.Exists ? ActivePlayer.Go.GetComponent<PlayerCombatCore>() : null;
-        if (activeCore == null || AnyOtherUIOpen()) return;
+        if (activeCore == null) return;
         Open(activeCore);
     }
 
-    private bool AnyOtherUIOpen()
+    public void TabHide()
     {
-        if (BottleUIController.Instance != null && BottleUIController.Instance.IsOpen) return true;
-        if (MinimapController.Instance != null && MinimapController.Instance.IsOpen) return true;
-        if (MerchantUIController.Instance != null && MerchantUIController.Instance.IsOpen) return true;
-        if (CitizenProfileUIController.Instance != null && CitizenProfileUIController.Instance.IsOpen) return true;
-        if (equipmentUI != null && equipmentUI.IsOpen) return true;
-        return false;
+        if (open) Close();
     }
 
     private void Open(PlayerCombatCore target)
@@ -131,26 +92,6 @@ public class StatusUIController : MonoBehaviour
         open = true;
         if (panel != null) panel.SetActive(true);
 
-        // 左カラムにメインカメラを絞り、自キャラ正面のクローズアップへ（閉じたら元に戻す）。
-        var cam = mainCamera != null ? mainCamera : Camera.main;
-        if (cam != null)
-        {
-            savedCamRect = cam.rect;
-            savedFarClip = cam.farClipPlane;
-            savedClearFlags = cam.clearFlags;
-            savedBgColor = cam.backgroundColor;
-            cam.rect = new Rect(0f, 0f, leftColumnWidth, 1f);
-            cam.farClipPlane = closeUpFarClip;
-            cam.clearFlags = CameraClearFlags.SolidColor;
-            cam.backgroundColor = Color.black;
-            // 自分以外を消す：自分の見た目をCloseUpViewレイヤーへ移し、カメラはそれだけ映す（装備・進化画面と同じ）。
-            savedCullingMask = cam.cullingMask;
-            cullingMaskSaved = true;
-            cam.cullingMask = CloseUpIsolator.Mask;
-        }
-        if (tpsCamera != null) tpsCamera.BeginCloseUp(closeUpDistance, closeUpPitch, closeUpHeight);
-        CloseUpIsolator.Isolate(target.gameObject);
-
         BuildRows();
         Refresh();
     }
@@ -160,19 +101,6 @@ public class StatusUIController : MonoBehaviour
         open = false;
         if (panel != null) panel.SetActive(false);
         ClearRows();
-
-        // メインカメラを全画面・元の視点に戻す。
-        var cam = mainCamera != null ? mainCamera : Camera.main;
-        if (cam != null)
-        {
-            cam.rect = savedCamRect;
-            cam.farClipPlane = savedFarClip;
-            cam.clearFlags = savedClearFlags;
-            cam.backgroundColor = savedBgColor;
-            if (cullingMaskSaved) { cam.cullingMask = savedCullingMask; cullingMaskSaved = false; }
-        }
-        if (tpsCamera != null) tpsCamera.EndCloseUp();
-        CloseUpIsolator.Restore(); // 自分の見た目レイヤーを元に戻す
     }
 
     // スキル数ぶん行を生成（カタログは実行中に増えないので開いた時だけ）。値の更新はRefreshが毎フレーム行う。
