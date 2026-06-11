@@ -46,6 +46,10 @@ public class PlayerCombatCore : MonoBehaviour, IBattleInfo, IHealth
     public float Current => health != null ? health.Current : 0f;
     public float Max => health != null ? health.Max : 0f;
     public bool IsDead => dead;
+    // 実効ステータスの読み取り口（ステータス画面の表示用。RecalcStatsで確定した値の公開＝一方向。DemonCoreと同じ流儀）。
+    public float AttackPower { get; private set; }   // 武器＋スキルΣ（武器なしは0）
+    public float Defense => defense.Value;           // 基礎＋装備Σ
+    public float DamageCut => damageCut;             // スキルの被ダメ軽減Σ
 
     public event Action OnDied;               // 死亡通知（PlayerCorpseDropperがドロップを行う）
     public event Action<BattleInfo> OnDamaged; // 被弾通知（PlayerSkillsが防御・肉体XPに使う）
@@ -109,11 +113,13 @@ public class PlayerCombatCore : MonoBehaviour, IBattleInfo, IHealth
         if (weapon != null)
         {
             float skillAttack = skills != null ? skills.GetAttackBonus(mult) : 0f;
-            attack.Initialize(weapon.attackPower + skillAttack, weapon.moves);
+            AttackPower = weapon.attackPower + skillAttack;
+            attack.Initialize(AttackPower, weapon.moves);
             hasWeapon = true;
         }
         else
         {
+            AttackPower = 0f;
             hasWeapon = false;
         }
 

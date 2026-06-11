@@ -41,6 +41,7 @@ public class PlayerSkills : MonoBehaviour
     public string GetSkillName(int skillId) =>
         catalog != null && skillId >= 0 && skillId < SkillCount && catalog.Skills[skillId] != null ? catalog.Skills[skillId].skillName : "";
     public float TotalTrainCap => catalog != null ? catalog.TotalTrainCap : 0f;
+    public float MaxSkillValue => catalog != null ? catalog.MaxSkillValue : 100f; // 値バーの分母（ステータスUI用）
 
     // 世代交代：遺伝値を設定し、鍛えた分をゼロに戻す（新しい人生＝キャップが丸ごと空く。Familyから呼ばれる）。
     //   遺伝値は下限・下げ不可・キャップ外（A確定の二層モデル）。

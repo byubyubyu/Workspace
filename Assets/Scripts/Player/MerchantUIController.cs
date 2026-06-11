@@ -80,6 +80,7 @@ public class MerchantUIController : MonoBehaviour
     [SerializeField] private float autoCloseRange = 5f;         // 商人からこの距離を超えたら自動で閉じる（取引キャンセル）
 
     private bool open;
+    private Wander heldWander; // 売買中に足止めしている商人（Close時に必ず解除する）
     private readonly List<MerchantStockSlot> slots = new List<MerchantStockSlot>();
     private MerchantStockEntry payingEntry; // 「買」を押して受付中のスロット
     private int paidCount;                  // 受付中スロットの受け皿内 priceItem 個数（再計算結果のキャッシュ）
@@ -161,6 +162,9 @@ public class MerchantUIController : MonoBehaviour
         open = true;
         payingEntry = null;
         paidCount = 0;
+        // 売買の間、商人の徘徊を足止め（こちらを向いてもらう）。Closeで必ず解除する。
+        heldWander = merchant.GetComponent<Wander>();
+        if (heldWander != null) heldWander.SetHold(true, PlayerTransform);
         if (panel != null) panel.SetActive(true);
         if (merchantCamera != null) merchantCamera.enabled = true;
         if (trayCamera != null) trayCamera.enabled = true;
@@ -252,6 +256,7 @@ public class MerchantUIController : MonoBehaviour
         Current = null;
         payingEntry = null;
         paidCount = 0;
+        if (heldWander != null) { heldWander.SetHold(false); heldWander = null; } // 足止め解除（自動Close経路も通る）
         if (panel != null) panel.SetActive(false);
         if (merchantCamera != null) merchantCamera.enabled = false;
         if (trayCamera != null) trayCamera.enabled = false;
@@ -395,15 +400,10 @@ public class MerchantUIController : MonoBehaviour
         merchantDisplay.UpdateDisplay(items, positions);
     }
 
-    // スロット枠(UI)の中心位置 → 商人カメラ前のワールド位置に変換する（EquipmentUIControllerと同じ）。
+    // スロット枠(UI)の中心位置 → 商人カメラ前のワールド位置に変換する（共通ヘルパー委譲）。
     private Vector3 SlotWorldPosition(RectTransform frame)
     {
-        Vector3 screen = RectTransformUtility.WorldToScreenPoint(uiCamera, frame.position);
-        RectTransformUtility.ScreenPointToLocalPointInRectangle(rawImageRect, screen, uiCamera, out Vector2 local);
-        Rect rect = rawImageRect.rect;
-        float vx = Mathf.InverseLerp(rect.xMin, rect.xMax, local.x);
-        float vy = Mathf.InverseLerp(rect.yMin, rect.yMax, local.y);
-        return merchantCamera.ViewportToWorldPoint(new Vector3(vx, vy, depth));
+        return UIModelProjection.FrameToWorld(frame, rawImageRect, uiCamera, merchantCamera, depth);
     }
 
     // 所持金＝プレイヤーのインベントリ全体のcurrencyValue合計（コインは1個ずつ1Gなど）。

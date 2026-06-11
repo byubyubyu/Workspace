@@ -11,7 +11,8 @@ public class CitizenProfileUIController : MonoBehaviour
 {
     [SerializeField] private GameObject panel;
     [SerializeField] private Text titleLabel;       // 「市民」
-    [SerializeField] private Text skillsLabel;      // 個体値一覧（複数行）
+    [SerializeField] private StatusSkillRow rowPrefab;    // 個体値1件ぶんの行（ステータス画面と共用・SetSimpleで簡易表示）
+    [SerializeField] private RectTransform rowContainer;  // 行を並べる親（VerticalLayoutGroup想定）
     [SerializeField] private Text priceLabel;       // 結納金・所持コイン
     [SerializeField] private Button proposeButton;  // 求婚（払えない/既婚中は押せない）
     [SerializeField] private Text proposeLabel;
@@ -21,6 +22,8 @@ public class CitizenProfileUIController : MonoBehaviour
     private CitizenSkills target;
     private Family family;
     private PlayerSkills playerSkills; // スキル名の取得用（市民とカタログ共通）
+    private Wander heldWander;         // 足止め中の相手（Close時に必ず解除する）
+    private readonly System.Collections.Generic.List<StatusSkillRow> rows = new System.Collections.Generic.List<StatusSkillRow>();
     private bool open;
 
     public bool IsOpen => open;
@@ -60,6 +63,12 @@ public class CitizenProfileUIController : MonoBehaviour
         target = citizen;
         open = true;
         if (panel != null) panel.SetActive(true);
+
+        // 立ち話の間、相手の徘徊を足止め（こちらを向いてもらう）。Closeで必ず解除する。
+        heldWander = citizen.GetComponent<Wander>();
+        if (heldWander != null) heldWander.SetHold(true, family.transform);
+
+        BuildRows();
         Refresh();
     }
 
@@ -67,7 +76,36 @@ public class CitizenProfileUIController : MonoBehaviour
     {
         open = false;
         target = null;
+        if (heldWander != null) { heldWander.SetHold(false); heldWander = null; } // 足止め解除（自動Close経路も通る）
         if (panel != null) panel.SetActive(false);
+        ClearRows();
+    }
+
+    // 個体値ぶん行を生成し、簡易表示（名前＋バー＋値）を設定する。市民の個体値は不変なので開いた時の一度だけ。
+    private void BuildRows()
+    {
+        ClearRows();
+        if (target == null || rowPrefab == null || rowContainer == null) return;
+        float max = playerSkills != null ? playerSkills.MaxSkillValue : 100f;
+        for (int i = 0; i < target.SkillCount; i++)
+        {
+            var row = Instantiate(rowPrefab, rowContainer);
+            row.Setup(null); // クリックなし（読み取り専用の行）
+            string name = playerSkills != null ? playerSkills.GetSkillName(i) : $"スキル{i}";
+            row.SetSimple(name, target.GetValue(i), max);
+            rows.Add(row);
+        }
+    }
+
+    private void ClearRows()
+    {
+        for (int i = 0; i < rows.Count; i++)
+        {
+            if (rows[i] == null) continue;
+            rows[i].transform.SetParent(null, false); // 遅延Destroy対策（進化画面と同じ罠対応）
+            Destroy(rows[i].gameObject);
+        }
+        rows.Clear();
     }
 
     private void Update()
@@ -95,17 +133,6 @@ public class CitizenProfileUIController : MonoBehaviour
     private void Refresh()
     {
         if (titleLabel != null) titleLabel.text = "市民";
-
-        if (skillsLabel != null)
-        {
-            var sb = new System.Text.StringBuilder();
-            for (int i = 0; i < target.SkillCount; i++)
-            {
-                string name = playerSkills != null ? playerSkills.GetSkillName(i) : $"スキル{i}";
-                sb.AppendLine($"{name}　{target.GetValue(i):F0}");
-            }
-            skillsLabel.text = sb.ToString();
-        }
 
         float price = family.PriceFor(target);
         float coins = family.CoinTotal;

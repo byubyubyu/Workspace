@@ -47,6 +47,8 @@ public class EquipmentUIController : MonoBehaviour
     private float savedFarClip;                              // 開く前の描画距離
     private CameraClearFlags savedClearFlags;                // 開く前のクリア方法
     private Color savedBgColor;                              // 開く前の背景色
+    private int savedCullingMask;                            // 開く前の描画レイヤー（自分以外を消すため絞る）
+    private bool cullingMaskSaved;                           // ※-1(Everything)が正規値のため、保存済みかはboolで判定
     private readonly Dictionary<EquipmentSlot, ItemData> shown = new Dictionary<EquipmentSlot, ItemData>(); // 前回表示の装備（フラッシュ差分検知用）
     private readonly HashSet<Graphic> flashing = new HashSet<Graphic>(); // 多重フラッシュ防止
 
@@ -74,6 +76,10 @@ public class EquipmentUIController : MonoBehaviour
 
     private void Update()
     {
+        // 開いている間は毎フレーム見た目レイヤーを当て直す（取り出し→自動装備で手元の見た目が
+        //   作り直されると、新Rendererは元レイヤーのまま＝映らなくなるため。対象は自分の数個のGOで軽い）。
+        if (open) CloseUpIsolator.Refresh();
+
         var kb = Keyboard.current;
         if (kb != null && kb[toggleKey].wasPressedThisFrame)
         {
@@ -124,8 +130,13 @@ public class EquipmentUIController : MonoBehaviour
             cam.farClipPlane = closeUpFarClip;
             cam.clearFlags = CameraClearFlags.SolidColor;
             cam.backgroundColor = Color.black;
+            // 自分以外を消す：自分の見た目をCloseUpViewレイヤーへ移し、カメラはそれだけ映す（真っ黒＋自分）。
+            savedCullingMask = cam.cullingMask;
+            cullingMaskSaved = true;
+            cam.cullingMask = CloseUpIsolator.Mask;
         }
         if (tpsCamera != null) tpsCamera.BeginCloseUp(closeUpDistance, closeUpPitch, closeUpHeight);
+        CloseUpIsolator.Isolate(ActivePlayer.Exists ? ActivePlayer.Go : (equipmentHolder != null ? equipmentHolder.gameObject : null));
 
         SyncShown(); // 開いた瞬間の一斉フラッシュ防止（現状を記録してからRefresh）
         Refresh();   // 最新の装備内容を反映
@@ -152,8 +163,10 @@ public class EquipmentUIController : MonoBehaviour
             cam.farClipPlane = savedFarClip;
             cam.clearFlags = savedClearFlags;
             cam.backgroundColor = savedBgColor;
+            if (cullingMaskSaved) { cam.cullingMask = savedCullingMask; cullingMaskSaved = false; }
         }
         if (tpsCamera != null) tpsCamera.EndCloseUp();
+        CloseUpIsolator.Restore(); // 自分の見た目レイヤーを元に戻す
 
         if (bottleUI != null) bottleUI.CloseBottle(); // 一緒に閉じる
     }
@@ -226,16 +239,9 @@ public class EquipmentUIController : MonoBehaviour
         flashing.Remove(g);
     }
 
-    // スロット枠(UI)の中心位置 → 装備カメラ前のワールド位置に変換する。
-    //   枠の画面座標 → RawImage内ローカル → 正規化(=viewport) → 装備カメラのViewportToWorldPoint。
-    //   （瓶のBottleDraggerと同じ座標変換）。
+    // スロット枠(UI)の中心位置 → 装備カメラ前のワールド位置に変換する（共通ヘルパー委譲）。
     private Vector3 SlotWorldPosition(RectTransform frame)
     {
-        Vector3 screen = RectTransformUtility.WorldToScreenPoint(uiCamera, frame.position);
-        RectTransformUtility.ScreenPointToLocalPointInRectangle(rawImageRect, screen, uiCamera, out Vector2 local);
-        Rect rect = rawImageRect.rect;
-        float vx = Mathf.InverseLerp(rect.xMin, rect.xMax, local.x);
-        float vy = Mathf.InverseLerp(rect.yMin, rect.yMax, local.y);
-        return equipmentCamera.ViewportToWorldPoint(new Vector3(vx, vy, depth));
+        return UIModelProjection.FrameToWorld(frame, rawImageRect, uiCamera, equipmentCamera, depth);
     }
 }

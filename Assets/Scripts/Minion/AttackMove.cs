@@ -25,4 +25,15 @@ public class AttackMove : ScriptableObject
 
     // 1回の攻撃サイクルの長さ（オートバトルの攻撃周期に使う）。
     public float TotalTime => windupTime + activeTime + recoveryTime;
+
+    // UI表示名（専用フィールドは持たず、SOアセット名から「AttackMove_」接頭辞を剥がす。
+    //   M画面の「MinionData_」剥がしと同じ流儀。進化画面・ステータス画面が使う）。
+    public string DisplayName
+    {
+        get
+        {
+            const string Prefix = "AttackMove_";
+            return name.StartsWith(Prefix) ? name.Substring(Prefix.Length) : name;
+        }
+    }
 }

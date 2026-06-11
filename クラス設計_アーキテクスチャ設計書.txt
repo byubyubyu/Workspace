@@ -734,14 +734,38 @@ O. 要確認・後回し（アイテム）
   PartEvolutionOption    部位の進化先候補1件（target:PartData＋cost）。PartData.evolutionsに並べる＝部位ごとの分岐ツリー
   DemonCore.EvolvePart(スロット番号, 候補番号)  上記【DemonPlayer】参照
   DemonCore死亡ペナルティ     リスポーン時にDevourPool.Clear＋ResetParts＋ApplyBody＝ポイント喪失・部位初期化
-  EvolutionUIController（Demon/・シーンのEvolutionUISystem）
+  EvolutionUIController（Demon/・シーンのEvolutionUISystem。2026-06-11グラフィカル版へ全面改修・外部API互換維持）
     ├── 魔族操作中のCキーで開閉（人間のCはEquipmentUIControllerが担当＝Update冒頭でDemonCore有無のガード）
-    ├── 表示：素体名／捕食ポイントゲージ（毎フレーム更新）／候補ボタン×3＝全スロットの進化候補のフラット一覧
-    │     （「前脚：前脚 → 鋭い前脚／必要 40pt」形式。不足時interactable=false。tier上限超えの候補は出さない。
-    │       候補がボタン数を超えたらLogWarning＝あふれを黙殺しない）
-    ├── 候補クリック→DemonCore.EvolvePart(スロット, 候補)→成功でRefresh（閉じない＝連続進化できる）
+    ├── レイアウト（商人画面の文法流用）：
+    │     左＝メインカメラを左30%に絞り TPSCamera.BeginCloseUp（実機の魔族本体＝装備画面と同じ流儀・閉じたら復元）
+    │     中央＝候補リスト：EvolutionOptionSlot（行prefab）をVerticalLayoutGroup下に動的生成。
+    │       行＝部位prefabの3Dモデル枠＋「頭：頭 → 硬い頭」＋コストバッジ。不足時SetAffordable(false)＝
+    │       CanvasGroup暗転＋クリック不可（毎フレーム更新）。tier上限超えの候補は出さない
+    │     右＝素体名／捕食ポイントゲージ／現在ステータス（DemonCoreのMax・AttackPower・Defense・MoveSpeedBonus）
+    ├── 行クリック→詳細ビュー：候補部位の大3D＋ステ補正差分（BuildDiffText＝差分0の行は省略・
+    │     被ダメ倍率/部位HPは「→」表記・付与ワザは「AttackMove_」接頭辞剥がし）＋「進化」確定／「戻る」
+    ├── 確定→DemonCore.EvolvePart(スロット, 候補)→成功で候補・行を作り直してリストへ（閉じない＝連続進化）
+    ├── 3D表示＝商人と同じ裏空間方式：MerchantDisplay（EvolutionDisplayインスタンス）＋専用カメラ→
+    │     EvolutionRT(768×1024)→RawImage。レイヤーEvolutionView(20)。
+    │     罠対応も商人と同じ（行生成直後はForceRebuildLayoutImmediate／詳細はForceUpdateCanvases。
+    │     行の破棄はSetParent(null)してからDestroy＝遅延Destroyの旧行がレイアウト計算に混ざるのを防ぐ）
     └── 相互閉じ：I（BottleUI）/M（Minimap）/商人Open がこちらをCloseする（既存の流儀に追加済み）
+  EvolutionOptionSlot（Demon/・Assets/Prefabs/UI/EvolutionOptionSlot.prefab）
+    候補1件ぶんの行（dumb view・MerchantStockSlot流儀）。Setup(ラベル,コスト,進化先,コールバック)＋
+    SetAffordable(bool)。PartFrame（3Dモデル枠）とTarget（進化先PartData）をControllerが読む
+  MerchantDisplay拡張（2026-06-11・既存ItemData経路は委譲で不変）
+    ├── UpdateDisplayPrefabs(prefabs, positions, sizes)＝ItemDataを持たないモデル（部位prefab等）の汎用表示口
+    ├── stripBehaviours（SerializeField）＝生成モデルのCollider/Rigidbody/MonoBehaviour無効化
+    │     （部位prefabはPartHurtbox・Hitbox・Motion同梱のため、進化画面の飾り表示ではtrue）
+    └── centerBounds（SerializeField）＝Rendererバウンズ中心を枠中心に合わせる
+          （部位prefabは「アンカーからぶら下がる」作りで原点が偏っているため、進化画面ではtrue）
+  UIModelProjection（Common/・static）
+    FrameToWorld(枠, RawImage矩形, uiカメラ, 表示カメラ, 奥行き)＝UI枠→裏空間ワールド位置の共通変換。
+    装備・商人・進化の3クラスで重複していた同一式を抽出（各クラスのSlotWorldPositionは委譲に置換済み）
+  DemonCore読み取り口（2026-06-11追加）：Defense／AttackPower／MoveSpeedBonus＝ApplyBodyで確定した
+    実効値の公開（進化画面の現在ステータス表示用。UI→Coreの一方向参照）
   ※ F9＝捕食ポイント+50のデバッグキー（進化はUIから）
+  ※ 旧テキスト版パネルはEvolutionPanel_Oldとして非アクティブ残置（StatusPanel等の複製元参照用）
 
 
 ----------------------------------------------------------------
@@ -761,10 +785,20 @@ O. 要確認・後回し（アイテム）
     │     倍率判定＝Corpse.SourceTeam（None=野生／それ以外=人間側。判断はコンポーネント側・SOは数値のみ）
     └── IsUnlocked(BodyData)＝Points≧requiredSoulPoints ／ Add(amount)＝デバッグ・将来の獲得源用の公開口
   BodyCatalog（SO・Assets/Data/Demon/）  素体リスト（マスターSO）。素体ID＝番号（マルチ方針）
-  ReincarnationUIController（Demon/・シーンのReincarnationUISystem。進化パネルの複製で構築）
-    ├── ActivePlayerの魔族を遅延フックし、OnAwaitReincarnationで素体選択画面を開く
-    ├── 表示：魂ポイント／素体ボタン（未解放＝グレー＋必要pt表示）
-    └── クリック→DemonCore.Reincarnate(素体番号)→成功で閉じる
+  ReincarnationUIController（Demon/・シーンのReincarnationUISystem。2026-06-11グラフィカル版へ全面改修）
+    ├── ActivePlayerの魔族を遅延フックし、OnAwaitReincarnationで素体選択画面を開く（疎結合は不変）
+    ├── レイアウト：全画面黒＋タイトル＋右上に魂pt／中央＝素体リスト（EvolutionOptionSlot共用の動的生成行・
+    │     3Dプレビュー＋素体名。未解放＝「魂50pt」バッジ＋暗転。魂ptと解放状態は毎フレーム反映＝F10加算が即効く）
+    ├── 行クリック→詳細ビュー：大3D＋ステ一覧（HP/防御/攻撃/部位進化上限Tier/体格×n・未解放なら必要pt）＋
+    │     「転生」確定／「戻る」（転生は不可逆のため確定式・進化画面と同じ文法）
+    ├── 確定→DemonCore.Reincarnate(素体番号)→成功で閉じる
+    └── 3D表示＝進化画面の裏空間（EvolutionDisplay・専用カメラ・EvolutionRT）を共用
+          （死亡中は進化画面が開かないため衝突しない。保険としてOpen時に進化画面をClose）
+  DemonBodyPreview（Demon/・static）  素体の表示専用プレビュー組み立て（骨格＋各スロットの初期部位prefab。
+    素体prefabはアンカーだけの骨格＝そのままでは何も見えないため。PartHurtboxへのデータ押し込みはしない）
+  MerchantDisplay.UpdateDisplayInstances（2026-06-11追加）  生成済みインスタンス版の表示口
+    （prefabではなく実行時に組み立てたモデルを渡す。所有権は表示側へ移る。prefab版はこれへ委譲）
+  EvolutionOptionSlot.SetBadge（2026-06-11追加）  バッジ文言の直接指定（null=非表示。転生画面の「魂50pt」用）
   共通拡張：Devourer.OnDevouredイベント／Corpse.SourceTeam（CorpseSpawner・PlayerCorpseDropperが死亡時に設定）
 
 【人間：被ダメ実体＋死（実装済み）】
@@ -827,21 +861,42 @@ O. 要確認・後回し（アイテム）
 
 【デバッグキー一覧】人間：F7結婚/F8世代交代/F11スキル値ダンプ/F12+10歳。魔族：F9捕食pt+50/F10魂pt+50
 
-【人間：ステータス画面・婚活UI（実装済み・レイアウトは仮配置＝磨き待ち）】
-  StatusUIController（Player/・シーンのStatusUISystem。進化パネル複製で構築）
-    ├── 仮キーP（人間操作中のみ・魔族は進化画面が代替）。年齢/段階/倍率・HP/スタミナ・
-    │     スキル行（実効値＝遺伝＋鍛錬の内訳）・鍛錬合計/キャップ
+【人間：ステータス画面・婚活UI（実装済み・2026-06-11グラフィカル版へ磨き完了）】
+  StatusUIController（Player/・シーンのStatusUISystem。進化画面と同じ3カラム文法・外部API互換維持）
+    ├── 仮キーP（人間操作中のみ・魔族は進化画面が代替）
+    ├── レイアウト：左＝メインカメラを左30%に絞り TPSCamera.BeginCloseUp（寄り値は装備画面のシーン値と同一）／
+    │     中央＝鍛錬合計バー＋StatusSkillRow（行prefab）を動的生成（モードバッジと値バーが色連動：↑緑/固グレー/↓赤）／
+    │     右＝年齢・能力値（ラベル列＋数値列の2テキストで桁揃え。スキル由来分は「（+n）」併記＝
+    │     PlayerSkills.GetHpBonus/GetAttackBonus(倍率)を表示用に再計算）・武器のワザ一覧（AttackMove.DisplayName・上詰め）
     ├── スキル行クリック＝PlayerSkills.SetMode（↑→固定→↓トグル）＝唯一の書き込み。他は読み取りのみ（一方向）
     └── 他UI（瓶/M/商人/装備/プロフィール）が開いたら自分から閉じる（自己監視方式＝他UI側のコードを触らない）。
           他UI中のPは無視（画面切替の統一は将来）
-  CitizenProfileUIController（Player/・シーンのCitizenProfileUISystem。進化パネル複製で構築）
-    ├── ItemPickerのEから開く（商人以外の市民）。個体値一覧・結納金・所持コイン・「求婚」ボタン
+  StatusSkillRow（Player/・Assets/Prefabs/UI/StatusSkillRow.prefab）
+    スキル1件ぶんの行（dumb view）。SetData(名前,値,上限,遺伝,鍛錬,モード)＝ステータス用／
+    SetSimple(名前,値,上限)＝市民プロフィール用（バッジ・内訳なし・琥珀バー・コンパクト窓向けにレイアウト詰め替え）
+  CitizenProfileUIController（Player/・シーンのCitizenProfileUISystem。コンパクト羊皮紙窓＝世界が見えたまま立ち話）
+    ├── ItemPickerのEから開く（商人以外の市民）。個体値行（StatusSkillRow共用）・結納金・所持コイン・「求婚」ボタン
+    ├── Open中は相手のWander.SetHold(true, プレイヤー)＝足止め＋こちらを向く。Close（自動Close含む）で必ず解除
     ├── CanOpen＝操作中プレイヤーが家系（Family）持ちのみ＝魔族のEは素通し
     ├── 求婚クリック→Family.TryPropose→成立で閉じる。既婚中・コイン不足はボタン無効
     └── 相手から離れる（autoCloseRange）／他UIが開く／相手消滅、で自動Close
+  Wander.SetHold(bool, faceTarget)（Citizen/）  立ち話の足止め。agent.isStopped＋Y軸回頭（解除で徘徊再開）。
+    商人UIのOpen/Closeも呼ぶが、現状の商人prefabはWander無し（据え置きNPC）＝将来Wander付き商人が出たら自動で効く
+  CloseUpGrassHider（Common/・static）  クローズアップ中だけPointGrassRendererを無効化
+    （参照カウント式・パッケージ側コードは触らない）。現在の使用箇所はステータスP（風景は見せたまま草だけ消す）
+  CloseUpIsolator（Common/・static）  クローズアップ中の「自分以外を消す」（装備C・進化Cが使用・2026-06-11）
+    ├── Isolate(対象)＝対象配下のRenderer持ちGOだけレイヤーをCloseUpView(21)へ移す。
+    │     呼び出し側ControllerがメインカメラのcullingMaskをCloseUpIsolator.Maskに絞る（Closeで両方復元）
+    ├── 当たり判定GO（Hurtbox/Hitbox等＝Rendererと別GO）は触らない＝メニュー中も被弾する無防備リスクを維持
+    ├── Refresh()＝開いている間の見た目作り直し（装備変更・部位進化のApplyBody）対応。
+    │     両Controllerが開いている間は毎フレーム呼ぶ（対象は自分の数個のGOで軽い）
+    └── ※cullingMask復元の番兵に-1は使えない（-1=Everythingが正規値）→保存済みフラグはboolで持つ
+  PlayerCombatCore読み取り口（2026-06-11追加）：AttackPower（武器＋スキルΣ・武器なし0）／Defense／DamageCut
+    ＝RecalcStatsで確定した実効値の公開（DemonCoreと同じ流儀）。PlayerSkills.MaxSkillValue＝値バーの分母
+  AttackMove.DisplayName  SOアセット名から「AttackMove_」接頭辞を剥がした表示名（進化・ステータスUIが使う）
   ItemPicker（拡張）   CitizenCore.AllからMerchant無し＋CitizenSkills持ちを最寄り追跡（レジストリ方式）。
                        Eの振り分け＝商人→市民→死体→アイテム（距離優先）。E再押下で開いているUIを閉じる
   PlayerHandState（拡張）  ステータスUI中・プロフィールUI中は左クリックの攻撃/使用をしない（ボタンクリックとの衝突防止）
 
 【未実装（設計確定済み・GDDセクション15参照）】
-  ステータス/プロフィールUIのレイアウト磨き／家系画面・市民の名前／複数の子（素質ブレ・子の選択画面）／いなし
+  家系画面・市民の名前／複数の子（素質ブレ・子の選択画面）／いなし

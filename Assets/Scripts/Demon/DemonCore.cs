@@ -54,6 +54,10 @@ public class DemonCore : MonoBehaviour, IBattleInfo, IHealth
         catalog != null && currentBodyIndex >= 0 && currentBodyIndex < catalog.Bodies.Count
             ? catalog.Bodies[currentBodyIndex] : null;
     public DevourPool DevourPool => devourPool;
+    // 実効ステータスの読み取り口（進化画面の現在値表示用。ApplyBodyで確定した値をそのまま公開＝一方向）。
+    public float Defense => defense;
+    public float AttackPower { get; private set; }
+    public float MoveSpeedBonus { get; private set; }
     public int SlotCount => equippedParts != null ? equippedParts.Length : 0;
     public PartData GetEquippedPart(int slotIndex) =>
         equippedParts != null && slotIndex >= 0 && slotIndex < equippedParts.Length ? equippedParts[slotIndex] : null;
@@ -161,8 +165,12 @@ public class DemonCore : MonoBehaviour, IBattleInfo, IHealth
             defense = 0f;
         }
 
+        // 実効値の公開用キャッシュ（進化画面が読む）。
+        AttackPower = body.AttackPower + powerBonus;
+        MoveSpeedBonus = speedBonus;
+
         // 部品へ注入（兵士のMinionCore.Initializeと同じ「押し込む」方式）。
-        attack.Initialize(body.AttackPower + powerBonus, moves); // 新しい体のHitboxを拾い直す
+        attack.Initialize(AttackPower, moves); // 新しい体のHitboxを拾い直す
         if (body.Stamina != null) stamina.Initialize(body.Stamina, team);
         else Debug.LogError($"[DemonCore] 素体「{body.BodyName}」のStaminaData欠け: {name}");
         stagger.Configure(body.StaggerThreshold, body.BigStaggerDuration);

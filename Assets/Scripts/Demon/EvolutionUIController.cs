@@ -1,38 +1,88 @@
 // 保存先: Assets/Scripts/Demon/EvolutionUIController.cs
-// 進化画面（魔族のC画面。人間の装備画面に相当）。GDDセクション14。
+// 進化画面（魔族のC画面。人間の装備画面に相当）。GDDセクション14。グラフィカル版（商人画面の文法を流用）。
 //   ・Cキーで開閉（魔族操作中のみ。人間のときはEquipmentUIControllerが従来通り担当）。
-//   ・進化は部位単位：候補ボタン＝「全スロットの進化候補」のフラット一覧
-//     （スロット名：現部位 → 進化先＋必要ポイント。不足時は押せない）。
-//   ・候補クリック→DemonCore.EvolvePart(スロット番号, 候補番号)→成功でRefresh（閉じない＝連続進化できる）。
+//   ・レイアウト：左＝メインカメラの寄り表示（実機の魔族本体＝進化結果が即見える・装備画面と同じ流儀）／
+//     中央＝進化候補リスト（EvolutionOptionSlotの動的生成行・部位prefabを3D表示）／
+//     右＝素体名・捕食ポイントゲージ・現在ステータス（実効値）。
+//   ・行クリック→詳細ビュー：候補部位の大3D＋ステ補正差分＋付与ワザ＋「進化」確定／「戻る」。
+//     進化成功でリストへ戻る（画面は閉じない＝連続進化できる）。
+//   ・3D表示は商人と同じ「裏空間（MerchantDisplay）＋専用カメラ→RenderTexture→RawImage」方式。
+//     部位prefabは挙動を同梱するため、裏空間側はstripBehaviours=trueで飾り表示にする。
 //   ・I/M/商人との相互閉じは既存の流儀（各UIが開く時にこちらをCloseする）。
-//   ・見た目は現状シンプル版。候補の体を3Dで見せるグラフィカル版は磨きフェーズで（商人画面の文法を流用予定）。
 using System.Collections.Generic;
+using System.Text;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 public class EvolutionUIController : MonoBehaviour
 {
-    [SerializeField] private GameObject panel;        // 進化画面のパネル
-    [SerializeField] private Text formLabel;          // 現在形態名
+    [Header("パネル")]
+    [SerializeField] private GameObject panel;            // 進化画面のパネル
+
+    [Header("候補リスト（動的生成）")]
+    [SerializeField] private EvolutionOptionSlot slotPrefab; // 候補1件ぶんの行prefab
+    [SerializeField] private RectTransform slotContainer;    // 行を並べる親（VerticalLayoutGroup想定）
+    [SerializeField] private GameObject listGroup;            // ListView親
+
+    [Header("詳細ビュー（行クリックで切替）")]
+    [SerializeField] private GameObject detailGroup;          // DetailView親
+    [SerializeField] private RectTransform detailPartFrame;   // 候補部位の大表示枠
+    [SerializeField] private Text detailNameLabel;            // 「頭 → 硬い頭」
+    [SerializeField] private Text detailStatsLabel;           // ステ補正差分＋付与ワザ
+    [SerializeField] private Button confirmButton;            // 「進化」（不足時disabled）
+    [SerializeField] private Button backButton;               // 「戻る」
+
+    [Header("3Dモデル表示（商人画面と同じ方式）")]
+    [SerializeField] private MerchantDisplay partDisplay;     // 裏空間（部位prefabを並べる。stripBehaviours=true）
+    [SerializeField] private Camera partCamera;               // 裏空間を撮る専用カメラ（開いている間だけ有効）
+    [SerializeField] private RectTransform rawImageRect;      // モデルを映すRawImageの矩形（枠位置→モデル位置の変換基準）
+    [SerializeField] private Camera uiCamera;                 // Canvasのカメラ（Screen Space Overlayならnullのまま）
+    [SerializeField] private float depth = 10f;               // 専用カメラからモデルを置く奥行き
+    [SerializeField] private float listViewSize = 1.2f;       // リスト行の部位モデルの最大辺
+    [SerializeField] private float detailViewSize = 3f;       // 詳細ビューの大表示モデルの最大辺
+
+    [Header("右カラム（素体・ポイント・現在ステータス）")]
+    [SerializeField] private Text formLabel;          // 素体名
     [SerializeField] private Text poolLabel;          // 捕食ポイントの数値（例 30/100）
     [SerializeField] private Image poolFill;          // 捕食ポイントゲージ（Image Type=Filled）
-    [SerializeField] private Button[] optionButtons;  // 進化候補ボタン（候補数より多いぶんは非表示）
-    [SerializeField] private Text[] optionLabels;     // 各ボタンの文字（行き先名＋必要ポイント）
+    [SerializeField] private Text statsLabel;         // 現在の実効ステータス（最大HP・攻撃・防御・移動補正）
+
+    [Header("左カラム＝メインカメラの寄り表示（装備画面と同じ流儀）")]
+    [SerializeField] private Camera mainCamera;              // 通常プレイのメインカメラ（未設定ならCamera.main）
+    [SerializeField] private TPSCamera tpsCamera;            // 視点のクローズアップ切替（正面寄り）
+    [SerializeField] private float closeUpDistance = 3.5f;   // 寄りの距離（四足は人間より横に広いので少し引く）
+    [SerializeField] private float closeUpPitch = 5f;        // 寄りの俯角
+    [SerializeField] private float closeUpHeight = 0.8f;     // 注視点の高さ
+    [SerializeField] private float closeUpFarClip = 8f;      // クローズアップ中の描画距離（キャラ周辺だけ描画）
+    [SerializeField] private float leftColumnWidth = 0.3f;   // メインカメラを絞る画面左端の幅（viewport比）
+
     [SerializeField] private Key toggleKey = Key.C;
 
-    // 表示中の候補1件＝（スロット番号・候補番号）。ボタン番号→この対をDemonCore.EvolvePartへ渡す。
+    // 表示中の候補1件＝（スロット番号・候補番号）。行→この対をDemonCore.EvolvePartへ渡す。
     private struct Candidate
     {
         public int slot;
         public int option;
         public string label;
         public float cost;
+        public PartData current;
+        public PartData target;
     }
 
     private readonly List<Candidate> candidates = new List<Candidate>();
+    private readonly List<EvolutionOptionSlot> slots = new List<EvolutionOptionSlot>();
+    private int detailIndex = -1;     // 詳細ビュー中の候補（-1=リスト表示中）
     private bool open;
     private DemonCore demon;
+
+    // メインカメラの復元用（装備画面と同じ）。
+    private Rect savedCamRect = new Rect(0f, 0f, 1f, 1f);
+    private float savedFarClip;
+    private CameraClearFlags savedClearFlags;
+    private Color savedBgColor;
+    private int savedCullingMask;      // 開く前の描画レイヤー（自分以外を消すため絞る）
+    private bool cullingMaskSaved;     // ※-1(Everything)が正規値のため、保存済みかはboolで判定
 
     public bool IsOpen => open;
     public static EvolutionUIController Instance { get; private set; }
@@ -51,11 +101,9 @@ public class EvolutionUIController : MonoBehaviour
     private void Start()
     {
         if (panel != null) panel.SetActive(false);
-        for (int i = 0; i < optionButtons.Length; i++)
-        {
-            int index = i; // クロージャ用
-            if (optionButtons[i] != null) optionButtons[i].onClick.AddListener(() => OnOptionClicked(index));
-        }
+        if (partCamera != null) partCamera.enabled = false;
+        if (confirmButton != null) confirmButton.onClick.AddListener(OnConfirmClicked);
+        if (backButton != null) backButton.onClick.AddListener(ShowListView);
         open = false;
     }
 
@@ -86,7 +134,12 @@ public class EvolutionUIController : MonoBehaviour
             else Open(activeDemon);
         }
 
-        if (open) Refresh(); // ポイントは戦闘で常に変わるので開いている間は毎フレーム更新
+        if (open)
+        {
+            RefreshDynamic(); // ポイント・HPは戦闘で常に変わるので開いている間は毎フレーム更新
+            // 進化で体が組み直る（ApplyBody＝新Rendererが元レイヤーで生成）ため、見た目レイヤーも毎フレーム当て直す。
+            CloseUpIsolator.Refresh();
+        }
     }
 
     public void Open(DemonCore target)
@@ -95,7 +148,31 @@ public class EvolutionUIController : MonoBehaviour
         demon = target;
         open = true;
         if (panel != null) panel.SetActive(true);
-        Refresh();
+        if (partCamera != null) partCamera.enabled = true;
+
+        // 左カラムにメインカメラを絞り、自分（魔族本体）正面のクローズアップへ（閉じたら元に戻す）。
+        var cam = mainCamera != null ? mainCamera : Camera.main;
+        if (cam != null)
+        {
+            savedCamRect = cam.rect;
+            savedFarClip = cam.farClipPlane;
+            savedClearFlags = cam.clearFlags;
+            savedBgColor = cam.backgroundColor;
+            cam.rect = new Rect(0f, 0f, leftColumnWidth, 1f);
+            cam.farClipPlane = closeUpFarClip;
+            cam.clearFlags = CameraClearFlags.SolidColor;
+            cam.backgroundColor = Color.black;
+            // 自分以外を消す：自分（魔族本体）の見た目をCloseUpViewレイヤーへ移し、カメラはそれだけ映す。
+            savedCullingMask = cam.cullingMask;
+            cullingMaskSaved = true;
+            cam.cullingMask = CloseUpIsolator.Mask;
+        }
+        if (tpsCamera != null) tpsCamera.BeginCloseUp(closeUpDistance, closeUpPitch, closeUpHeight);
+        CloseUpIsolator.Isolate(target.gameObject);
+
+        BuildCandidates();
+        BuildSlots();
+        ShowListView();
     }
 
     public void Close()
@@ -103,21 +180,34 @@ public class EvolutionUIController : MonoBehaviour
         if (!open) return;
         open = false;
         demon = null;
+        detailIndex = -1;
         if (panel != null) panel.SetActive(false);
+        if (partCamera != null) partCamera.enabled = false;
+        ClearSlots();
+        if (partDisplay != null) partDisplay.Clear();
+
+        // メインカメラを全画面・元の視点・元の描画距離に戻す。
+        var cam = mainCamera != null ? mainCamera : Camera.main;
+        if (cam != null)
+        {
+            cam.rect = savedCamRect;
+            cam.farClipPlane = savedFarClip;
+            cam.clearFlags = savedClearFlags;
+            cam.backgroundColor = savedBgColor;
+            if (cullingMaskSaved) { cam.cullingMask = savedCullingMask; cullingMaskSaved = false; }
+        }
+        if (tpsCamera != null) tpsCamera.EndCloseUp();
+        CloseUpIsolator.Restore(); // 自分の見た目レイヤーを元に戻す
     }
 
-    // 表示更新：素体名・ポイントゲージ・部位進化の候補ボタン（不足時はinteractable=false）。
-    private void Refresh()
+    // ============ 候補の収集・行の生成（開いた時と進化成功時だけ作り直す） ============
+
+    // 全スロットの進化候補をフラットに集める（候補＝スロット番号＋候補番号。tier上限超えは出さない）。
+    private void BuildCandidates()
     {
-        if (demon == null || demon.Body == null) return;
-        var pool = demon.DevourPool;
-
-        if (poolLabel != null) poolLabel.text = pool != null ? $"{pool.Current:F0} / {pool.Max:F0}" : "-";
-        if (poolFill != null) poolFill.fillAmount = pool != null && pool.Max > 0f ? pool.Current / pool.Max : 0f;
-
-        // 全スロットの進化候補をフラットに集める（候補＝スロット番号＋候補番号）。
         candidates.Clear();
-        var slots = demon.Body.Slots;
+        if (demon == null || demon.Body == null) return;
+        var slotsDef = demon.Body.Slots;
         for (int s = 0; s < demon.SlotCount; s++)
         {
             var part = demon.GetEquippedPart(s);
@@ -127,40 +217,179 @@ public class EvolutionUIController : MonoBehaviour
                 var opt = part.evolutions[o];
                 if (opt == null || opt.target == null) continue;
                 if (opt.target.tier > demon.Body.MaxPartTier) continue; // 素体の進化上限を超える候補は出さない
-                string slotName = s < slots.Count ? slots[s].slotName : "";
+                string slotName = s < slotsDef.Count ? slotsDef[s].slotName : "";
                 candidates.Add(new Candidate
                 {
                     slot = s,
                     option = o,
                     cost = opt.cost,
-                    label = $"{slotName}：{part.partName} → {opt.target.partName}\n必要 {opt.cost:F0}pt",
+                    current = part,
+                    target = opt.target,
+                    label = $"{slotName}：{part.partName} → {opt.target.partName}",
                 });
             }
         }
-        if (candidates.Count > optionButtons.Length)
-            Debug.LogWarning($"[EvolutionUI] 進化候補{candidates.Count}件がボタン数{optionButtons.Length}を超過（あふれた分は非表示）");
-
-        for (int i = 0; i < optionButtons.Length; i++)
-        {
-            bool exists = i < candidates.Count;
-            if (optionButtons[i] != null) optionButtons[i].gameObject.SetActive(exists);
-            if (!exists) continue;
-            if (optionLabels[i] != null) optionLabels[i].text = candidates[i].label;
-            optionButtons[i].interactable = pool != null && pool.CanAfford(candidates[i].cost);
-        }
-
-        if (formLabel != null)
-            formLabel.text = candidates.Count > 0 ? $"素体：{demon.Body.BodyName}" : $"素体：{demon.Body.BodyName}（進化先なし）";
     }
 
-    private void OnOptionClicked(int index)
+    // 候補数ぶん行を生成する（MerchantUIController.BuildSlotsと同じ動的生成パターン）。
+    private void BuildSlots()
     {
-        if (demon == null || index < 0 || index >= candidates.Count) return;
+        ClearSlots();
+        if (slotPrefab == null || slotContainer == null) return;
+        for (int i = 0; i < candidates.Count; i++)
+        {
+            int index = i; // クロージャ用
+            var slot = Instantiate(slotPrefab, slotContainer);
+            slot.Setup(candidates[i].label, candidates[i].cost, candidates[i].target, () => ShowDetailView(index));
+            slots.Add(slot);
+        }
+    }
+
+    private void ClearSlots()
+    {
+        for (int i = 0; i < slots.Count; i++)
+        {
+            if (slots[i] == null) continue;
+            // Destroyは遅延のため、親から外してから破棄する（外さないと直後のForceRebuildLayoutImmediateが
+            //   旧行を含めて高さ計算し、新行の3Dモデル位置がズレる。DemonCore.ApplyBodyと同じ罠対応）。
+            slots[i].transform.SetParent(null, false);
+            Destroy(slots[i].gameObject);
+        }
+        slots.Clear();
+    }
+
+    // ============ List / Detail 切替 ============
+
+    private void ShowListView()
+    {
+        detailIndex = -1;
+        if (listGroup != null) listGroup.SetActive(true);
+        if (detailGroup != null) detailGroup.SetActive(false);
+        RefreshListDisplay();
+        RefreshDynamic();
+    }
+
+    private void ShowDetailView(int index)
+    {
+        if (index < 0 || index >= candidates.Count) return;
+        detailIndex = index;
         var c = candidates[index];
+        if (listGroup != null) listGroup.SetActive(false);
+        if (detailGroup != null) detailGroup.SetActive(true);
+        if (detailNameLabel != null) detailNameLabel.text = $"{c.current.partName} → {c.target.partName}";
+        if (detailStatsLabel != null) detailStatsLabel.text = BuildDiffText(c.current, c.target);
+        RefreshDetailDisplay(c);
+        RefreshDynamic();
+    }
+
+    // リスト行の3Dモデル配置：各行のpartFrame位置に進化先部位のprefabを並べる。
+    //   VerticalLayoutGroup配下に行を追加した直後はframe.positionが未確定なので、
+    //   ForceRebuildLayoutImmediateでレイアウトを即時確定させてから位置を読む（商人と同じ罠対応）。
+    private void RefreshListDisplay()
+    {
+        if (partDisplay == null || partCamera == null || rawImageRect == null) return;
+        if (slotContainer != null) LayoutRebuilder.ForceRebuildLayoutImmediate(slotContainer);
+
+        var prefabs = new List<GameObject>(slots.Count);
+        var positions = new List<Vector3>(slots.Count);
+        for (int i = 0; i < slots.Count; i++)
+        {
+            var slot = slots[i];
+            if (slot == null || slot.Target == null || slot.PartFrame == null) continue;
+            prefabs.Add(slot.Target.partPrefab);
+            positions.Add(UIModelProjection.FrameToWorld(slot.PartFrame, rawImageRect, uiCamera, partCamera, depth));
+        }
+        partDisplay.ViewSize = listViewSize;
+        partDisplay.UpdateDisplayPrefabs(prefabs, positions, null);
+    }
+
+    // 詳細ビューの3Dモデル配置：候補部位1個をdetailPartFrameの位置に大表示する。
+    //   SetActive(true)直後はCanvasのlayoutが未確定なため、ForceUpdateCanvasesしてから位置を読む（商人と同じ罠対応）。
+    private void RefreshDetailDisplay(Candidate c)
+    {
+        if (partDisplay == null || partCamera == null || rawImageRect == null || detailPartFrame == null) return;
+        Canvas.ForceUpdateCanvases();
+        var prefabs = new List<GameObject> { c.target.partPrefab };
+        var positions = new List<Vector3>
+        {
+            UIModelProjection.FrameToWorld(detailPartFrame, rawImageRect, uiCamera, partCamera, depth),
+        };
+        partDisplay.ViewSize = detailViewSize;
+        partDisplay.UpdateDisplayPrefabs(prefabs, positions, null);
+    }
+
+    // ステ補正の差分テキスト（現部位→進化先）。差分0の行は出さない。
+    private static string BuildDiffText(PartData current, PartData target)
+    {
+        var sb = new StringBuilder();
+        AppendDiff(sb, "HP", target.hpBonus - current.hpBonus);
+        AppendDiff(sb, "攻撃", target.attackPowerBonus - current.attackPowerBonus);
+        AppendDiff(sb, "防御", target.defenseBonus - current.defenseBonus);
+        AppendDiff(sb, "移動", target.moveSpeedBonus - current.moveSpeedBonus);
+        if (!Mathf.Approximately(current.damageMultiplier, target.damageMultiplier))
+            sb.AppendLine($"被ダメ倍率 {current.damageMultiplier:F1} → {target.damageMultiplier:F1}");
+        if (!Mathf.Approximately(current.partHp, target.partHp))
+            sb.AppendLine($"部位HP {current.partHp:F0} → {target.partHp:F0}");
+
+        // 付与ワザ（進化先が解放するワザ。表示名＝AttackMove.DisplayName）。
+        if (target.grantedMoves != null && target.grantedMoves.Count > 0)
+        {
+            var names = new List<string>();
+            foreach (var m in target.grantedMoves)
+                if (m != null) names.Add(m.DisplayName);
+            if (names.Count > 0) sb.AppendLine($"付与ワザ：{string.Join("・", names)}");
+        }
+
+        if (sb.Length == 0) sb.AppendLine("（補正変化なし）");
+        return sb.ToString().TrimEnd();
+    }
+
+    private static void AppendDiff(StringBuilder sb, string label, float diff)
+    {
+        if (Mathf.Approximately(diff, 0f)) return;
+        sb.AppendLine($"{label} {(diff > 0 ? "+" : "")}{diff:F1}".Replace(".0", ""));
+    }
+
+    // ============ 毎フレーム更新（ゲージ・現在ステータス・押せるか） ============
+
+    private void RefreshDynamic()
+    {
+        if (demon == null || demon.Body == null) return;
+        var pool = demon.DevourPool;
+
+        if (poolLabel != null) poolLabel.text = pool != null ? $"{pool.Current:F0} / {pool.Max:F0}" : "-";
+        if (poolFill != null) poolFill.fillAmount = pool != null && pool.Max > 0f ? pool.Current / pool.Max : 0f;
+        if (formLabel != null) formLabel.text = $"素体：{demon.Body.BodyName}";
+
+        // 現在の実効ステータス（素体＋部位Σ。DemonCore.ApplyBodyの確定値を読むだけ＝一方向）。
+        if (statsLabel != null)
+        {
+            statsLabel.text =
+                $"HP {demon.Current:F0} / {demon.Max:F0}\n" +
+                $"攻撃 {demon.AttackPower:F0}　防御 {demon.Defense:F0}\n" +
+                $"移動 {(demon.MoveSpeedBonus >= 0 ? "+" : "")}{demon.MoveSpeedBonus:F1}";
+        }
+
+        // 行の押せるか＋暗転（リスト中）／進化ボタンの押せるか（詳細中）。
+        for (int i = 0; i < slots.Count && i < candidates.Count; i++)
+            if (slots[i] != null) slots[i].SetAffordable(pool != null && pool.CanAfford(candidates[i].cost));
+        if (confirmButton != null && detailIndex >= 0 && detailIndex < candidates.Count)
+            confirmButton.interactable = pool != null && pool.CanAfford(candidates[detailIndex].cost);
+    }
+
+    // ============ 進化の確定 ============
+
+    private void OnConfirmClicked()
+    {
+        if (demon == null || detailIndex < 0 || detailIndex >= candidates.Count) return;
+        var c = candidates[detailIndex];
         if (demon.EvolvePart(c.slot, c.option))
         {
             Debug.Log($"[EvolutionUI] 部位進化成功 → {demon.GetEquippedPart(c.slot).partName}");
-            Refresh(); // 部位単位なので閉じずに続けて進化できる
+            // 候補が変わる（進化した部位の次の進化先が出る）ので作り直してリストへ＝連続進化できる。
+            BuildCandidates();
+            BuildSlots();
+            ShowListView();
         }
     }
 }
