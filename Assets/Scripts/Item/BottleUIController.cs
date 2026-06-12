@@ -117,24 +117,9 @@ public class BottleUIController : MonoBehaviour, IMenuTab
                 OpenBottle();
                 return;
             }
-            // ミニマップ（M画面）中のIはMを閉じて、そのまま瓶を中央で開く（画面の切り替え）。
-            if (MinimapController.Instance != null && MinimapController.Instance.IsOpen)
-            {
-                MinimapController.Instance.Close();
-                SetRightHalf(false);
-                OpenBottle();
-                return;
-            }
-            // 進化画面（魔族のC画面）が開いている時のI：進化画面を閉じて瓶を開く（画面の切り替え）。
-            if (EvolutionUIController.Instance != null && EvolutionUIController.Instance.IsOpen)
-            {
-                EvolutionUIController.Instance.Close();
-                SetRightHalf(false);
-                OpenBottle();
-                return;
-            }
             // 統合メニューが開いている時のI：メニューを閉じて、瓶を中央で単独で開き直す
-            //   （瓶＝アクション用途。装備タブが一緒に開いていた瓶もメニュー側が閉じる）。
+            //   （瓶＝アクション用途。装備タブが一緒に開いていた瓶もメニュー側が閉じる。
+            //     M画面・進化画面もメニューのタブになったので、旧「M中のI」「進化中のI」分岐もこの一本で賄う）。
             if (TabMenuController.Instance != null && TabMenuController.Instance.IsOpen)
             {
                 TabMenuController.Instance.CloseMenu();

@@ -1,21 +1,20 @@
 // 保存先: Assets/Scripts/Demon/EvolutionUIController.cs
-// 進化画面（魔族のC画面。人間の装備画面に相当）。GDDセクション14。グラフィカル版（商人画面の文法を流用）。
-//   ・Cキーで開閉（魔族操作中のみ。人間のときはEquipmentUIControllerが従来通り担当）。
-//   ・レイアウト：左＝メインカメラの寄り表示（実機の魔族本体＝進化結果が即見える・装備画面と同じ流儀）／
+// 進化画面＝統合メニュー（TabMenuController）の魔族「進化」タブ。GDDセクション14。
+//   レイアウト：左＝メインカメラの寄り表示（クローズアップはメニューが一元管理）／
 //     中央＝進化候補リスト（EvolutionOptionSlotの動的生成行・部位prefabを3D表示）／
 //     右＝素体名・捕食ポイントゲージ・現在ステータス（実効値）。
 //   ・行クリック→詳細ビュー：候補部位の大3D＋ステ補正差分＋付与ワザ＋「進化」確定／「戻る」。
 //     進化成功でリストへ戻る（画面は閉じない＝連続進化できる）。
 //   ・3D表示は商人と同じ「裏空間（MerchantDisplay）＋専用カメラ→RenderTexture→RawImage」方式。
 //     部位prefabは挙動を同梱するため、裏空間側はstripBehaviours=trueで飾り表示にする。
-//   ・I/M/商人との相互閉じは既存の流儀（各UIが開く時にこちらをCloseする）。
+//   ※ 旧・自前のCキー処理／メインカメラ管理（左カラム絞り・CloseUpIsolator）／商人・M・瓶との
+//     相互閉じは、魔族の統合メニュー化（2026-06-12）でTabMenuControllerへ一元化し削除した。
 using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
-using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
-public class EvolutionUIController : MonoBehaviour
+public class EvolutionUIController : MonoBehaviour, IMenuTab
 {
     [Header("パネル")]
     [SerializeField] private GameObject panel;            // 進化画面のパネル
@@ -48,17 +47,6 @@ public class EvolutionUIController : MonoBehaviour
     [SerializeField] private Image poolFill;          // 捕食ポイントゲージ（Image Type=Filled）
     [SerializeField] private Text statsLabel;         // 現在の実効ステータス（最大HP・攻撃・防御・移動補正）
 
-    [Header("左カラム＝メインカメラの寄り表示（装備画面と同じ流儀）")]
-    [SerializeField] private Camera mainCamera;              // 通常プレイのメインカメラ（未設定ならCamera.main）
-    [SerializeField] private TPSCamera tpsCamera;            // 視点のクローズアップ切替（正面寄り）
-    [SerializeField] private float closeUpDistance = 3.5f;   // 寄りの距離（四足は人間より横に広いので少し引く）
-    [SerializeField] private float closeUpPitch = 5f;        // 寄りの俯角
-    [SerializeField] private float closeUpHeight = 0.8f;     // 注視点の高さ
-    [SerializeField] private float closeUpFarClip = 8f;      // クローズアップ中の描画距離（キャラ周辺だけ描画）
-    [SerializeField] private float leftColumnWidth = 0.3f;   // メインカメラを絞る画面左端の幅（viewport比）
-
-    [SerializeField] private Key toggleKey = Key.C;
-
     // 表示中の候補1件＝（スロット番号・候補番号）。行→この対をDemonCore.EvolvePartへ渡す。
     private struct Candidate
     {
@@ -76,28 +64,6 @@ public class EvolutionUIController : MonoBehaviour
     private bool open;
     private DemonCore demon;
 
-    // メインカメラの復元用（装備画面と同じ）。
-    private Rect savedCamRect = new Rect(0f, 0f, 1f, 1f);
-    private float savedFarClip;
-    private CameraClearFlags savedClearFlags;
-    private Color savedBgColor;
-    private int savedCullingMask;      // 開く前の描画レイヤー（自分以外を消すため絞る）
-    private bool cullingMaskSaved;     // ※-1(Everything)が正規値のため、保存済みかはboolで判定
-
-    public bool IsOpen => open;
-    public static EvolutionUIController Instance { get; private set; }
-
-    private void Awake()
-    {
-        if (Instance != null && Instance != this) { Destroy(this); return; }
-        Instance = this;
-    }
-
-    private void OnDestroy()
-    {
-        if (Instance == this) Instance = null;
-    }
-
     private void Start()
     {
         if (panel != null) panel.SetActive(false);
@@ -109,73 +75,27 @@ public class EvolutionUIController : MonoBehaviour
 
     private void Update()
     {
-        // 魔族を操作している時だけCを引き受ける（人間のCはEquipmentUIControllerが担当）。
-        var activeDemon = ActivePlayer.Exists ? ActivePlayer.Go.GetComponent<DemonCore>() : null;
-        if (activeDemon == null) return;
-
-        var kb = Keyboard.current;
-        if (kb != null && kb[toggleKey].wasPressedThisFrame)
-        {
-            // 商人UI中のCは取引キャンセル→進化画面（画面の切り替え・既存の流儀）。
-            if (MerchantUIController.Instance != null && MerchantUIController.Instance.IsOpen)
-            {
-                MerchantUIController.Instance.Close();
-                Open(activeDemon);
-                return;
-            }
-            // M画面中のCはMを閉じて進化画面。
-            if (MinimapController.Instance != null && MinimapController.Instance.IsOpen)
-            {
-                MinimapController.Instance.Close();
-                Open(activeDemon);
-                return;
-            }
-            if (open) Close();
-            else Open(activeDemon);
-        }
-
-        if (open)
-        {
-            RefreshDynamic(); // ポイント・HPは戦闘で常に変わるので開いている間は毎フレーム更新
-            // 進化で体が組み直る（ApplyBody＝新Rendererが元レイヤーで生成）ため、見た目レイヤーも毎フレーム当て直す。
-            CloseUpIsolator.Refresh();
-        }
+        // ポイント・HPは戦闘で常に変わるので開いている間は毎フレーム更新。
+        //   （進化で体が組み直った時の見た目レイヤー当て直しはTabMenuControllerが毎フレーム行う。）
+        if (open) RefreshDynamic();
     }
 
-    public void Open(DemonCore target)
+    // --- IMenuTab（TabMenuControllerから呼ばれる。クローズアップ・キー入力・相互排他はメニュー側） ---
+
+    public void TabShow()
     {
-        if (open || target == null) return;
-        demon = target;
+        if (open) return;
+        demon = ActivePlayer.Exists ? ActivePlayer.Go.GetComponent<DemonCore>() : null;
+        if (demon == null) return; // 魔族タブはメニューが魔族操作中にしか出さない（保険）
         open = true;
         if (panel != null) panel.SetActive(true);
         if (partCamera != null) partCamera.enabled = true;
-
-        // 左カラムにメインカメラを絞り、自分（魔族本体）正面のクローズアップへ（閉じたら元に戻す）。
-        var cam = mainCamera != null ? mainCamera : Camera.main;
-        if (cam != null)
-        {
-            savedCamRect = cam.rect;
-            savedFarClip = cam.farClipPlane;
-            savedClearFlags = cam.clearFlags;
-            savedBgColor = cam.backgroundColor;
-            cam.rect = new Rect(0f, 0f, leftColumnWidth, 1f);
-            cam.farClipPlane = closeUpFarClip;
-            cam.clearFlags = CameraClearFlags.SolidColor;
-            cam.backgroundColor = Color.black;
-            // 自分以外を消す：自分（魔族本体）の見た目をCloseUpViewレイヤーへ移し、カメラはそれだけ映す。
-            savedCullingMask = cam.cullingMask;
-            cullingMaskSaved = true;
-            cam.cullingMask = CloseUpIsolator.Mask;
-        }
-        if (tpsCamera != null) tpsCamera.BeginCloseUp(closeUpDistance, closeUpPitch, closeUpHeight);
-        CloseUpIsolator.Isolate(target.gameObject);
-
         BuildCandidates();
         BuildSlots();
         ShowListView();
     }
 
-    public void Close()
+    public void TabHide()
     {
         if (!open) return;
         open = false;
@@ -185,19 +105,6 @@ public class EvolutionUIController : MonoBehaviour
         if (partCamera != null) partCamera.enabled = false;
         ClearSlots();
         if (partDisplay != null) partDisplay.Clear();
-
-        // メインカメラを全画面・元の視点・元の描画距離に戻す。
-        var cam = mainCamera != null ? mainCamera : Camera.main;
-        if (cam != null)
-        {
-            cam.rect = savedCamRect;
-            cam.farClipPlane = savedFarClip;
-            cam.clearFlags = savedClearFlags;
-            cam.backgroundColor = savedBgColor;
-            if (cullingMaskSaved) { cam.cullingMask = savedCullingMask; cullingMaskSaved = false; }
-        }
-        if (tpsCamera != null) tpsCamera.EndCloseUp();
-        CloseUpIsolator.Restore(); // 自分の見た目レイヤーを元に戻す
     }
 
     // ============ 候補の収集・行の生成（開いた時と進化成功時だけ作り直す） ============

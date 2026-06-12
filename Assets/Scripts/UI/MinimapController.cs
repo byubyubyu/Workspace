@@ -8,7 +8,6 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-using UnityEngine.InputSystem;
 using UnityEngine.EventSystems;
 
 public class MinimapController : MonoBehaviour, IMenuTab
@@ -29,7 +28,6 @@ public class MinimapController : MonoBehaviour, IMenuTab
     [SerializeField] private Text pendingSummaryLabel;        // 追加済み指示の一覧表示（任意・未設定可）
 
     [Header("操作")]
-    [SerializeField] private Key toggleKey = Key.M;
     [SerializeField] private float commandRange = 20f;  // 指示元にできる、プレイヤーからの距離
     [SerializeField] private float orderDuration = 30f; // 派遣指示の持続秒
     [SerializeField] private int defaultCount = 0;      // 兵種ごとの数の初期値（M-3c-2）
@@ -87,33 +85,8 @@ public class MinimapController : MonoBehaviour, IMenuTab
 
     private void Update()
     {
-        var kb = Keyboard.current;
-        // 人間操作中のMキーは統合メニュー（TabMenuController）が担当する（二重処理防止）。
-        //   ここのMキー処理は魔族操作中（メニュー外）のためだけに残している。
-        bool humanMenuActive = TabMenuController.Instance != null
-            && ActivePlayer.Exists && ActivePlayer.Go.GetComponent<DemonCore>() == null;
-        if (!humanMenuActive && kb != null && kb[toggleKey].wasPressedThisFrame)
-        {
-            // 商人UI中のMは取引キャンセル→ミニマップを開く（画面の切り替え）。
-            if (MerchantUIController.Instance != null && MerchantUIController.Instance.IsOpen)
-            {
-                MerchantUIController.Instance.Close();
-                SetOpen(true);
-            }
-            // 進化画面（魔族のC画面）中のMは進化画面を閉じる → Mを開く。
-            else if (EvolutionUIController.Instance != null && EvolutionUIController.Instance.IsOpen)
-            {
-                EvolutionUIController.Instance.Close();
-                SetOpen(true);
-            }
-            // 瓶（I単独）中のMは瓶をキャンセル → Mを開く。
-            else if (BottleUIController.Instance != null && BottleUIController.Instance.IsOpen)
-            {
-                BottleUIController.Instance.CloseBottle();
-                SetOpen(true);
-            }
-            else SetOpen(!open);
-        }
+        // Mキーは人間/魔族とも統合メニュー（TabMenuController）が担当する（魔族の統合メニュー化
+        //   2026-06-12で旧・魔族用フォールバックのM直処理を削除した）。
 
         if (open)
         {

@@ -93,9 +93,9 @@ public class ReincarnationUIController : MonoBehaviour
     private void Open()
     {
         if (open || demon == null) return;
-        // 進化画面が開いたまま死んだ場合の保険（裏空間・カメラを共用しているため先に閉じる）。
-        if (EvolutionUIController.Instance != null && EvolutionUIController.Instance.IsOpen)
-            EvolutionUIController.Instance.Close();
+        // メニュー（進化タブ等）が開いたまま死んだ場合の保険（進化画面と裏空間・カメラを共用しているため先に閉じる）。
+        if (TabMenuController.Instance != null && TabMenuController.Instance.IsOpen)
+            TabMenuController.Instance.CloseMenu();
         open = true;
         if (panel != null) panel.SetActive(true);
         if (displayCamera != null) displayCamera.enabled = true;

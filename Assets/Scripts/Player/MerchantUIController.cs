@@ -155,9 +155,9 @@ public class MerchantUIController : MonoBehaviour
     public void Open(Merchant merchant)
     {
         if (merchant == null) return;
-        // 進化画面（魔族のC画面）が開いていたら閉じてから（既存の相互閉じ流儀）。
-        if (EvolutionUIController.Instance != null && EvolutionUIController.Instance.IsOpen)
-            EvolutionUIController.Instance.Close();
+        // 統合メニュー（装備/進化タブ等）が開いていたら閉じてから（既存の相互閉じ流儀）。
+        if (TabMenuController.Instance != null && TabMenuController.Instance.IsOpen)
+            TabMenuController.Instance.CloseMenu();
         Current = merchant;
         open = true;
         payingEntry = null;

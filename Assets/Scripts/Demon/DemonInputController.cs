@@ -25,9 +25,10 @@ public class DemonInputController : MonoBehaviour
     {
         if (core.IsDead) return;
 
-        // 画面系UIを開いている間は攻撃しない（人間用UIだが、開いた場合の事故防止の保険）。
+        // 画面系UIを開いている間は技を出さない（進化行・タブ等のクリックと左クリック=技0の衝突防止）。
+        if (TabMenuController.Instance != null && TabMenuController.Instance.IsOpen) return;
+        if (BottleUIController.Instance != null && BottleUIController.Instance.IsOpen) return;
         if (MerchantUIController.Instance != null && MerchantUIController.Instance.IsOpen) return;
-        if (MinimapController.Instance != null && MinimapController.Instance.IsOpen) return;
 
         var keyboard = Keyboard.current;
 
