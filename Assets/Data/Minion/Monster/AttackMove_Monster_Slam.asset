@@ -20,5 +20,5 @@ MonoBehaviour:
   reach: 4.5
   staminaCost: 50
   motionId: ForelegSlam
-  swingEffect: {fileID: 6188706574630452542, guid: c9c812742f7841b46b53bfbd44663300, type: 3}
+  swingEffect: {fileID: 4179956755130852952, guid: 79d24ed00c7d27c46924c52f1c3ec6d3, type: 3}
   hitEffect: {fileID: 8301239362584563623, guid: 286e6fd26cd85c040b58aa072b0f9e9e, type: 3}
