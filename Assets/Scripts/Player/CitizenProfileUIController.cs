@@ -16,7 +16,6 @@ public class CitizenProfileUIController : MonoBehaviour
     [SerializeField] private Text priceLabel;       // 結納金・所持コイン
     [SerializeField] private Button proposeButton;  // 求婚（払えない/既婚中は押せない）
     [SerializeField] private Text proposeLabel;
-    [SerializeField] private EquipmentUIController equipmentUI; // 相互閉じ判定用（Instanceを持たないため参照で）
     [SerializeField] private float autoCloseRange = 3.5f;       // 相手から離れたら自動Close
 
     private CitizenSkills target;
@@ -120,14 +119,12 @@ public class CitizenProfileUIController : MonoBehaviour
         Refresh();
     }
 
+    // 自分以外の画面系UI（メニュー・瓶・商人）が開いたら、こちらから閉じる。
+    //   旧・装備UI単体参照（equipmentUI）はメニュー判定（UIScreens.MenuOpen）に置き換えた。
     private bool AnyOtherUIOpen()
     {
-        if (BottleUIController.Instance != null && BottleUIController.Instance.IsOpen) return true;
-        if (MinimapController.Instance != null && MinimapController.Instance.IsOpen) return true;
-        if (MerchantUIController.Instance != null && MerchantUIController.Instance.IsOpen) return true;
-        if (StatusUIController.Instance != null && StatusUIController.Instance.IsOpen) return true;
-        if (equipmentUI != null && equipmentUI.IsOpen) return true;
-        return false;
+        return UIScreens.MenuOpen || UIScreens.BottleOpen || UIScreens.MinimapOpen
+            || UIScreens.MerchantOpen || UIScreens.StatusOpen;
     }
 
     private void Refresh()

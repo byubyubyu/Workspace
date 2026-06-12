@@ -97,18 +97,9 @@ public class PlayerHandState : MonoBehaviour
 
     private void HandleLeftClick()
     {
-        // 統合メニュー中は攻撃も使用もしない（タブやマーカーのクリックと衝突するため）。
-        if (TabMenuController.Instance != null && TabMenuController.Instance.IsOpen) return;
-        // インベントリ中は攻撃も使用もしない（漁り操作はBottleDraggerが別途処理する）。
-        if (bottleUI != null && bottleUI.IsOpen) return;
-        // ミニマップ（M画面）中も攻撃しない。
-        if (MinimapController.Instance != null && MinimapController.Instance.IsOpen) return;
-        // 商人UI中も攻撃しない（売買中の事故を防ぐ。瓶のドラッグはBottleDraggerが処理する）。
-        if (MerchantUIController.Instance != null && MerchantUIController.Instance.IsOpen) return;
-        // ステータスUI（P画面）中も攻撃しない（スキル行ボタンのクリックと衝突するため）。
-        if (StatusUIController.Instance != null && StatusUIController.Instance.IsOpen) return;
-        // 市民プロフィール（婚活）中も攻撃しない（求婚ボタンのクリックと衝突するため）。
-        if (CitizenProfileUIController.Instance != null && CitizenProfileUIController.Instance.IsOpen) return;
+        // 画面系UI中は攻撃も使用もしない（タブ・スキル行・求婚ボタン等のクリックと衝突するため。
+        //   瓶の漁り操作はBottleDragger、商人の瓶ドラッグも同様に別途処理される）。
+        if (UIScreens.AnyBlocking) return;
 
         switch (state)
         {

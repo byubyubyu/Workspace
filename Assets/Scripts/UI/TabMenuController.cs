@@ -148,10 +148,7 @@ public class TabMenuController : MonoBehaviour
         }
 
         // 状況起動UI（商人・市民プロフィール）や、直接Iで開いた瓶の最中はメニューを出さない。
-        bool blocked =
-            (MerchantUIController.Instance != null && MerchantUIController.Instance.IsOpen) ||
-            (CitizenProfileUIController.Instance != null && CitizenProfileUIController.Instance.IsOpen) ||
-            (!open && BottleUIController.Instance != null && BottleUIController.Instance.IsOpen);
+        bool blocked = UIScreens.SituationalOpen || (!open && UIScreens.BottleOpen);
 
         // 開閉（Tab / ESC）
         if (kb[menuKey].wasPressedThisFrame || kb[Key.Escape].wasPressedThisFrame)

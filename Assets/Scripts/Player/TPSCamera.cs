@@ -67,9 +67,7 @@ public class TPSCamera : MonoBehaviour
         if (mouse == null) return;
 
         // ミニマップ（M画面）中・商人UI中はカメラ操作（回転・ズーム）を受け付けない。追従だけ続ける。
-        bool minimapOpen = MinimapController.Instance != null && MinimapController.Instance.IsOpen;
-        bool merchantOpen = MerchantUIController.Instance != null && MerchantUIController.Instance.IsOpen;
-        if (!minimapOpen && !merchantOpen)
+        if (!UIScreens.MinimapOpen && !UIScreens.MerchantOpen)
         {
             // 右ボタン押下中のみ回転（右クリックドラッグ）
             if (mouse.rightButton.isPressed)
